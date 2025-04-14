@@ -1209,12 +1209,12 @@ const getManagerTeams = async () => {
   return result.rows;
 };
 
-const saveSeatingArrangement = async (
-  allocationName,
-  schedule,
-  teams,
-  daysRequired
-) => {
+const saveSeatingArrangement = async (allocations) => {
+
+  console.log(allocations);
+  const {allocationName, schedule, teams, daysRequired} = allocations;
+
+  console.log(allocationName, schedule, teams, daysRequired);
   try {
     const client = await pool.connect();
     try {
@@ -1227,7 +1227,7 @@ const saveSeatingArrangement = async (
         const teamSize = teams[teamName];
 
         const managerRes = await client.query(
-          "SELECT id FROM manager_allocation WHERE team_name = $1",
+          "SELECT id FROM manager_allocation WHERE first_name = $1",
           [teamName]
         );
 
@@ -1236,6 +1236,13 @@ const saveSeatingArrangement = async (
         }
 
         const managerId = managerRes.rows[0].id;
+
+        console.log(managerId,
+          teamName,
+          teamSize,
+          parseInt(daysRequired),
+          allocationName,
+          allocatedDays.join(","));
 
         const sql = `INSERT INTO manager_seat_allocations 
           (manager_id, team_name, team_size, required_days, seating_allocation_name, allocated_days)
