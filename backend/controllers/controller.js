@@ -754,11 +754,11 @@ exports.saveSeatingArrangement = async (req, res) => {
   try {
     const allocations = req.body;
 
-    if (!Array.isArray(allocations) || allocations.length === 0) {
-      return res
-        .status(400)
-        .json({ error: "Invalid or empty allocation data" });
-    }
+    // if (!Array.isArray(allocations) || allocations.length === 0) {
+    //   return res
+    //     .status(400)
+    //     .json({ error: "Invalid or empty allocation data" });
+    // }
 
     const result = await models.saveSeatingArrangement(allocations);
 

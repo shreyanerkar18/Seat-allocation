@@ -34,127 +34,119 @@ const SeatAllocator = () => {
   const [selectedCity, setSelectedCity] = useState("");
   const [selectedCampus, setSelectedCampus] = useState("");
   const [selectedFloor, setSelectedFloor] = useState("");
-  const [hoeId, setHoeId] = useState("");
   const [managers, setManagers] = useState([]); // to store and update all managers under HOE
   const [selectedManager, setSelectedManager] = useState(""); // to store and update selected manager in drop-down
   const [isAddingManager, setIsAddingManager] = useState(false);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [firstNameError, setFirstNameError] = useState("");
-  const [lastNameError, setLastNameError] = useState("");
-  const [isSeatsChanging, setIsSeatsChanging] = useState(false);
-  const [selectedSeats, setSelectedSeats] = useState([]); // to store seats while selecting
-  const [HoeList, setHoeList] = useState([]);
-  const [HOE, setHoe] = useState({}); // to store and update HOE
-
   const [locations, setLocations] = useState([]);
 
-  const countries = [...new Set(locations.map((location) => location.country))];
-  const states = [
-    ...new Set(
-      locations
-        .filter((location) => location.country === selectedCountry)
-        .map((location) => location.state)
-    ),
-  ];
-  const cities = [
-    ...new Set(
-      locations
-        .filter((location) => location.state === selectedState)
-        .map((location) => location.city)
-    ),
-  ];
-  const campuses = [
-    ...new Set(
-      locations
-        .filter((location) => location.city === selectedCity)
-        .map((location) => location.campus)
-    ),
-  ];
-  const floors = [
-    ...new Set(
-      locations
-        .filter((location) => location.campus === selectedCampus)
-        .map((location) => location.floor)
-    ),
-  ];
+  // const countries = [...new Set(locations.map((location) => location.country))];
+  // const states = [
+  //   ...new Set(
+  //     locations
+  //       .filter((location) => location.country === selectedCountry)
+  //       .map((location) => location.state)
+  //   ),
+  // ];
+  // const cities = [
+  //   ...new Set(
+  //     locations
+  //       .filter((location) => location.state === selectedState)
+  //       .map((location) => location.city)
+  //   ),
+  // ];
+  // const campuses = [
+  //   ...new Set(
+  //     locations
+  //       .filter((location) => location.city === selectedCity)
+  //       .map((location) => location.campus)
+  //   ),
+  // ];
+  // const floors = [
+  //   ...new Set(
+  //     locations
+  //       .filter((location) => location.campus === selectedCampus)
+  //       .map((location) => location.floor)
+  //   ),
+  // ];
 
-  const getManagerDetails = useCallback(
-    async (id) => {
-      try {
-        const response2 = await axios.get(
-          `${baseurl}/getManagersByHOEIdFromTable/${id}`,
-          {
-            params: {
-              campus: selectedCampus,
-              floor: selectedFloor,
-              country: selectedCountry,
-              state: selectedState,
-              city: selectedCity,
-            },
-          }
-        );
+  // const getManagerDetails = useCallback(
+  //   async (id) => {
+  //     try {
+  //       const response2 = await axios.get(
+  //         `${baseurl}/getManagersByHOEIdFromTable/${id}`,
+  //         {
+  //           params: {
+  //             campus: selectedCampus,
+  //             floor: selectedFloor,
+  //             country: selectedCountry,
+  //             state: selectedState,
+  //             city: selectedCity,
+  //           },
+  //         }
+  //       );
 
-        setManagers(
-          response2.data.map((item) => ({
-            ...item,
-            name: item.first_name + " " + item.last_name,
-            seats_array: item.seats_data,
-          }))
-        );
-        if (response2.data.length > 0) {
-          if (selectedManager === "" && !isAddingManager) {
-            setSelectedManager({
-              ...response2.data[0],
-              name:
-                response2.data[0].first_name +
-                " " +
-                response2.data[0].last_name,
-              seats_array: response2.data[0].seats_data,
-            });
-          } else {
-            const managerDetails =
-              firstName !== "" && lastName !== ""
-                ? response2.data.filter(
-                    (item) =>
-                      item.first_name === firstName &&
-                      item.last_name === lastName
-                  )
-                : response2.data.filter(
-                    (item) => item.id === selectedManager.id
-                  );
-            setFirstName("");
-            setLastName("");
-            if (managerDetails.length === 0) {
-              setSelectedManager({
-                ...response2.data[0],
-                name:
-                  response2.data[0].first_name +
-                  " " +
-                  response2.data[0].last_name,
-                seats_array: response2.data[0].seats_data,
-              });
-            } else {
-              setSelectedManager({
-                ...managerDetails[0],
-                name:
-                  managerDetails[0].first_name +
-                  " " +
-                  managerDetails[0].last_name,
-                seats_array: managerDetails[0].seats_data,
-              });
-            }
-          }
-        } else {
-          setManagers([]);
-          setSelectedManager("");
-        }
-      } catch (err) {
-        console.error("Error fetching data:", err);
-      }
-    },
-    [selectedFloor, selectedCampus, selectedManager]
-  );
+  //       setManagers(
+  //         response2.data.map((item) => ({
+  //           ...item,
+  //           name: item.first_name + " " + item.last_name,
+  //           seats_array: item.seats_data,
+  //         }))
+  //       );
+  //       if (response2.data.length > 0) {
+  //         if (selectedManager === "" && !isAddingManager) {
+  //           setSelectedManager({
+  //             ...response2.data[0],
+  //             name:
+  //               response2.data[0].first_name +
+  //               " " +
+  //               response2.data[0].last_name,
+  //             seats_array: response2.data[0].seats_data,
+  //           });
+  //         } else {
+  //           const managerDetails =
+  //             firstName !== "" && lastName !== ""
+  //               ? response2.data.filter(
+  //                   (item) =>
+  //                     item.first_name === firstName &&
+  //                     item.last_name === lastName
+  //                 )
+  //               : response2.data.filter(
+  //                   (item) => item.id === selectedManager.id
+  //                 );
+  //           setFirstName("");
+  //           setLastName("");
+  //           if (managerDetails.length === 0) {
+  //             setSelectedManager({
+  //               ...response2.data[0],
+  //               name:
+  //                 response2.data[0].first_name +
+  //                 " " +
+  //                 response2.data[0].last_name,
+  //               seats_array: response2.data[0].seats_data,
+  //             });
+  //           } else {
+  //             setSelectedManager({
+  //               ...managerDetails[0],
+  //               name:
+  //                 managerDetails[0].first_name +
+  //                 " " +
+  //                 managerDetails[0].last_name,
+  //               seats_array: managerDetails[0].seats_data,
+  //             });
+  //           }
+  //         }
+  //       } else {
+  //         setManagers([]);
+  //         setSelectedManager("");
+  //       }
+  //     } catch (err) {
+  //       console.error("Error fetching data:", err);
+  //     }
+  //   },
+  //   [selectedFloor, selectedCampus, selectedManager]
+  // );
 
   const [teams, setTeams] = useState({});
 
@@ -169,7 +161,7 @@ const SeatAllocator = () => {
           formatted[team.first_name] = parseInt(team.team_size);
         });
 
-        console.log(formatted);
+        console.log("for", formatted);
 
         setTeams(formatted);
       } catch (error) {
@@ -542,14 +534,26 @@ const SeatAllocator = () => {
         });
       });
 
+      console.log("abbc",formattedSchedule);
       const payload = {
+        // allocationName: seatingArrangementName,
+        // schedule: formattedSchedule,
+        // teams, // this is already in { teamName: size } format
+        // daysRequired: daysRequired,
+
         allocationName: seatingArrangementName,
         schedule: formattedSchedule,
-        teams, // this is already in { teamName: size } format
-        daysRequired: daysRequired,
+        teams,
+        daysRequired,
       };
 
+      console.log("pay", payload);
+
       await axios.post(`${baseurl}/saveSeatingArrangement`, payload);
+      // await axios.post(`${baseurl}/saveSeatingArrangement`, payload, {
+      //   headers: { "Content-Type": "application/json" },
+      // });
+      
 
       alert("Seating arrangement saved successfully!");
       setShowSavePrompt(false);
@@ -735,25 +739,6 @@ const SeatAllocator = () => {
       {/* Seat Allocation Table */}
       <TableContainer component={Paper}>
         <Table>
-          {/* <TableHead>
-            <TableRow>
-              <TableCell
-                sx={{ borderRight: "1px solid #ddd", fontWeight: "bold" }}
-              >
-                Day
-              </TableCell>
-              {teams.length > 0 && Object.keys(teams).map((team) => (
-                <TableCell
-                  key={team}
-                  sx={{ borderRight: "1px solid #ddd", fontWeight: "bold" }}
-                >
-                  {${team} (${teams[team]})}
-                </TableCell>
-              ))}
-              <TableCell sx={{ fontWeight: "bold" }}>Total Seats</TableCell>
-            </TableRow>
-          </TableHead> */}
-
           <TableHead>
             <TableRow>
               <TableCell
