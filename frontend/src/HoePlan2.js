@@ -405,6 +405,7 @@ const SeatAllocator = () => {
     }));
   };
 
+
   const handleSaveSeatingArrangement = async () => {
     if (!seatingArrangementName) {
       alert("Please enter a seating arrangement name.");
@@ -433,18 +434,24 @@ const SeatAllocator = () => {
       console.log("pay", payload);
 
       await axios.post(`${baseurl}/saveSeatingArrangement`, payload);
-      // await axios.post(`${baseurl}/saveSeatingArrangement`, payload, {
-      //   headers: { "Content-Type": "application/json" },
-      // });
-
       alert("Seating arrangement saved successfully!");
       setShowSavePrompt(false);
       setSeatingArrangementName("");
     } catch (error) {
-      console.error("Error saving seating arrangement:", error);
-      alert("Failed to save. Please try again.");
+      console.error("Error saving seating arrangement:", error.message);
+      if (error.response) {
+        console.error("Response data:", error.response.data);
+        console.error("Status:", error.response.status);
+      }
+      if (error.response && error.response.status === 400) {
+        alert(error.response.data.error); // Shows: "Seating arrangement name already exists. Please choose a different name."
+      } else {
+        alert("Failed to save. Please try again.");
+      }
     }
+
   };
+
 
   const [seatingNames, setSeatingNames] = useState([]);
   const [selectedName, setSelectedName] = useState("");
@@ -701,62 +708,6 @@ const SeatAllocator = () => {
         </div>
       )}
 
-      <Paper sx={{ padding: 3, margin: 3 }}>
-        <div>
-          <Typography variant="h6">View Seating Arrangements</Typography>
-
-          <Select
-            value={selectedName}
-            onChange={(e) => {
-              setSelectedName(e.target.value);
-              fetchArrangement(e.target.value);
-            }}
-            displayEmpty
-            sx={{ marginTop: 2, minWidth: 300 }}
-          >
-            <MenuItem value="" disabled>
-              Select an arrangement
-            </MenuItem>
-            {seatingNames.map((name) => (
-              <MenuItem key={name} value={name}>
-                {name}
-              </MenuItem>
-            ))}
-          </Select>
-
-          {arrangement.length > 0 && (
-            <>
-              <Table sx={{ marginTop: 3 }}>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Manager Name</TableCell>
-                    <TableCell>Team Name</TableCell>
-                    <TableCell>Allocated Days</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {arrangement.map((row, index) => (
-                    <TableRow key={index}>
-                      <TableCell>{row.team_name}</TableCell>
-                      <TableCell>{row.team_name}</TableCell>
-                      <TableCell>{row.allocated_days}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              <Button
-                variant="outlined"
-                color="error"
-                onClick={handleDelete}
-                sx={{ marginTop: 2 }}
-              >
-                Delete This Arrangement
-              </Button>
-            </>
-          )}
-        </div>
-      </Paper>
-
       {/* Minimum Required Seats */}
       {/* <h3>Minimum Required Seats: {minSeatsRequired}</h3> */}
 
@@ -894,7 +845,7 @@ const SeatAllocator = () => {
         </Table>
       </TableContainer>
 
-      {schedule && Object.keys(schedule).length > 0 && (
+      {/* {schedule && Object.keys(schedule).length > 0 && (
         <div style={{ marginTop: 20, textAlign: "center" }}>
           {!showSavePrompt ? (
             <Button
@@ -941,7 +892,55 @@ const SeatAllocator = () => {
             </div>
           )}
         </div>
+      )} */}
+
+
+{schedule && Object.keys(schedule).length > 0 && (
+        <div style={{ marginTop: 20, textAlign: "center" }}>
+          {!showSavePrompt ? (
+            <Button
+              variant="contained"
+              color="success"
+              onClick={() => setShowSavePrompt(true)}
+            >
+              Save Seating Arrangement
+            </Button>
+          ) : (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                gap: "10px",
+              }}
+            >
+              <TextField
+                label="Seating Arrangement Name"
+                value={seatingArrangementName}
+                onChange={(e) => setSeatingArrangementName(e.target.value)}
+              />
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleSaveSeatingArrangement}
+              >
+                Save
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={() => {
+                  setShowSavePrompt(false);
+                  setSeatingArrangementName("");
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
+          )}
+        </div>
       )}
+
+
     </div>
   );
 };
