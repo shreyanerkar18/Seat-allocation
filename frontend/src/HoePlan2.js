@@ -467,6 +467,11 @@ const SeatAllocator = () => {
   };
 
   const handleDelete = async () => {
+    const confirmed = window.confirm(
+      `Are you sure you want to delete the arrangement "${selectedName}"?`
+    );
+    if (!confirmed) return;
+
     try {
       await axios.delete(`${baseurl}/seating-arrangement/${selectedName}`);
       alert("Arrangement deleted");
