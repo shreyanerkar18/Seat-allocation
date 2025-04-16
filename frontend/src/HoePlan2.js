@@ -1,5 +1,6 @@
 // import React, { useState } from "react";
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useRef, useEffect, useState, useCallback } from "react";
+
 import axios from "axios";
 import { baseurl } from "./utils";
 // import { Button, Container, Grid, Typography } from "@mui/material";
@@ -87,6 +88,8 @@ const SeatAllocator = () => {
   const [numSubTeams, setNumSubTeams] = useState("");
   const [subTeamSizes, setSubTeamSizes] = useState("");
   const [minSeatsRequired, setMinSeatsRequired] = useState(null);
+  const [previousDaysRequired, setPreviousDaysRequired] =
+    useState(daysRequired);
 
   // save button
   const [seatingArrangementName, setSeatingArrangementName] = useState("");
@@ -102,59 +105,13 @@ const SeatAllocator = () => {
 
     let minSeats = Math.ceil(totalTeamDays / 5);
 
-    let tempTotalSeats = minSeats;
-    let allocationPossible = false;
-
-    while (!allocationPossible) {
-      let newSchedule = {
-        Monday: [],
-        Tuesday: [],
-        Wednesday: [],
-        Thursday: [],
-        Friday: [],
-      };
-      let assignedDays = {};
-
-      for (let team in teams) {
-        assignedDays[team] = [];
-      }
-
-      function canAddTeam(day, team) {
-        let currentSeats = newSchedule[day].reduce(
-          (sum, t) => sum + teams[t],
-          0
-        );
-        return currentSeats + teams[team] <= tempTotalSeats;
-      }
-
-      let sortedTeams = Object.keys(teams).sort((a, b) => teams[b] - teams[a]);
-
-      let dayIndex = 0;
-      for (let i = 0; i < daysRequired; i++) {
-        for (let team of sortedTeams) {
-          if (assignedDays[team].length < daysRequired) {
-            let day = weekDays[dayIndex % 5];
-            if (canAddTeam(day, team)) {
-              newSchedule[day].push(team);
-              assignedDays[team].push(day);
-            }
-            dayIndex++;
-          }
-        }
-      }
-
-      allocationPossible = Object.keys(teams).every(
-        (team) => assignedDays[team].length === daysRequired
+    // Only reset totalSeats if it's 0 or daysRequired has changed
+    if (totalSeats === 0 || previousDaysRequired !== daysRequired) {
+      setTotalSeats(minSeats);
+      setPreviousDaysRequired(daysRequired); // Store last used value
+      alert(
+        `Cannot allocate seats fairly. Consider increasing seats. Minimum required seats: ${minSeats}`
       );
-
-      if (!allocationPossible) {
-        tempTotalSeats++;
-      }
-    }
-
-    // *Reset totalSeats to 0 if the new minSeatsRequired is lower*
-    if (minSeats < minSeatsRequired) {
-      setTotalSeats(0);
     }
 
     setMinSeatsRequired(minSeats);
@@ -263,6 +220,7 @@ const SeatAllocator = () => {
 
   const allocateSeats = () => {
     let requiredSeats = calculateMinSeatsRequired();
+
     if (totalSeats < requiredSeats) {
       alert(
         `Cannot allocate seats fairly. Consider increasing seats. Minimum required seats: ${requiredSeats}`
@@ -272,42 +230,67 @@ const SeatAllocator = () => {
       return;
     }
 
-    let newSchedule = {
-      Monday: [],
-      Tuesday: [],
-      Wednesday: [],
-      Thursday: [],
-      Friday: [],
-    };
-    let assignedDays = {};
+    let allocationPossible = false;
+    let newSchedule = null;
+    let tempTotalSeats = totalSeats;
 
-    for (let team in teams) {
-      assignedDays[team] = [];
-    }
+    while (!allocationPossible) {
+      let schedule = {
+        Monday: [],
+        Tuesday: [],
+        Wednesday: [],
+        Thursday: [],
+        Friday: [],
+      };
 
-    for (let i = 0; i < daysRequired; i++) {
+      let assignedDays = {};
       for (let team in teams) {
-        let availableDays = weekDays.filter(
-          (day) => assignedDays[team].length < daysRequired
-        );
-        for (let day of availableDays) {
-          let currentSeats = newSchedule[day].reduce(
-            (sum, t) => sum + teams[t],
-            0
-          );
-          if (currentSeats + teams[team] <= totalSeats) {
-            newSchedule[day].push(team);
-            assignedDays[team].push(day);
-            break;
+        assignedDays[team] = [];
+      }
+
+      function canAddTeam(day, team) {
+        let currentSeats = schedule[day].reduce((sum, t) => sum + teams[t], 0);
+        return currentSeats + teams[team] <= tempTotalSeats;
+      }
+
+      let sortedTeams = Object.keys(teams).sort((a, b) => teams[b] - teams[a]);
+
+      let dayIndex = 0;
+      for (let i = 0; i < daysRequired; i++) {
+        for (let team of sortedTeams) {
+          if (assignedDays[team].length < daysRequired) {
+            let day = weekDays[dayIndex % 5];
+            if (canAddTeam(day, team)) {
+              schedule[day].push(team);
+              assignedDays[team].push(day);
+            }
+            dayIndex++;
           }
         }
       }
+
+      allocationPossible = Object.keys(teams).every(
+        (team) => assignedDays[team].length === daysRequired
+      );
+
+      if (allocationPossible) {
+        newSchedule = schedule;
+      } else {
+        tempTotalSeats++;
+      }
+    }
+
+    if (tempTotalSeats !== totalSeats) {
+      alert(
+        `Cannot allocate seats fairly. Consider increasing seats. Minimum required seats: ${tempTotalSeats}`
+      );
+      setTotalSeats(tempTotalSeats);
+      setMinSeatsRequired(tempTotalSeats);
     }
 
     setSchedule(newSchedule);
   };
 
-  // const [preferences, setPreferences] = useState({});
   const [preferences, setPreferences] = useState({});
   const [showPreferences, setShowPreferences] = useState(false);
 
