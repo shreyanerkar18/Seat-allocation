@@ -1276,6 +1276,34 @@ const saveSeatingArrangement = async (allocations) => {
   }
 };
 
+const getSeatingAllocationNames = async () => {
+  const query = `SELECT DISTINCT seating_allocation_name FROM manager_seat_allocations ORDER BY seating_allocation_name;`;
+  const { rows } = await pool.query(query);
+  return rows.map(row => row.seating_allocation_name);
+};
+
+// 2. Get seating arrangement details by allocation name
+const getSeatingArrangementByName = async (allocationName) => {
+  const query = `
+    SELECT 
+      m.first_name,
+      msa.team_name,
+      msa.allocated_days
+    FROM manager_seat_allocations msa
+    JOIN manager_allocation m ON msa.manager_id = m.id
+    WHERE msa.seating_allocation_name = $1;
+  `;
+  const { rows } = await pool.query(query, [allocationName]);
+  return rows;
+};
+
+// 3. Delete all records for a given seating allocation name
+const deleteSeatingArrangement = async (allocationName) => {
+  const query = `DELETE FROM manager_seat_allocations WHERE seating_allocation_name = $1;`;
+  const result = await pool.query(query, [allocationName]);
+  return result.rowCount;
+};
+
 module.exports = {
   insertUser,
   findUserByEmail,
@@ -1318,4 +1346,7 @@ module.exports = {
   getManagerSeatAllocations,
   getManagerTeams,
   saveSeatingArrangement,
+  getSeatingAllocationNames,
+  getSeatingArrangementByName,
+  deleteSeatingArrangement,
 };

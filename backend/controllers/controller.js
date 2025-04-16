@@ -772,3 +772,35 @@ exports.saveSeatingArrangement = async (req, res) => {
       .json({ error: "Failed to save seating arrangement. Please try again." });
   }
 };
+
+
+exports.getSeatingAllocationNames = async (req, res) => {
+  try {
+    const names = await models.getSeatingAllocationNames();
+    res.json(names);
+  } catch (err) {
+    console.error("Error fetching names:", err);
+    res.status(500).json({ error: "Failed to fetch seating allocation names" });
+  }
+};
+exports.getSeatingArrangementByName = async (req, res) => {
+  try {
+    const { name } = req.params;
+    const arrangement = await models.getSeatingArrangementByName(name);
+    res.json(arrangement);
+  } catch (err) {
+    console.error("Error fetching arrangement:", err);
+    res.status(500).json({ error: "Failed to fetch seating arrangement" });
+  }
+};
+
+exports.deleteSeatingArrangement = async (req, res) => {
+  try {
+    const { name } = req.params;
+    const count = await models.deleteSeatingArrangement(name);
+    res.json({ deleted: count });
+  } catch (err) {
+    console.error("Error deleting arrangement:", err);
+    res.status(500).json({ error: "Failed to delete arrangement" });
+  }
+};

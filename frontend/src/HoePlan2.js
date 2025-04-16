@@ -21,6 +21,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Typography,
 } from "@mui/material";
 
 import EditIcon from "@mui/icons-material/Edit";
@@ -41,113 +42,7 @@ const SeatAllocator = () => {
   const [lastName, setLastName] = useState("");
   const [locations, setLocations] = useState([]);
 
-  // const countries = [...new Set(locations.map((location) => location.country))];
-  // const states = [
-  //   ...new Set(
-  //     locations
-  //       .filter((location) => location.country === selectedCountry)
-  //       .map((location) => location.state)
-  //   ),
-  // ];
-  // const cities = [
-  //   ...new Set(
-  //     locations
-  //       .filter((location) => location.state === selectedState)
-  //       .map((location) => location.city)
-  //   ),
-  // ];
-  // const campuses = [
-  //   ...new Set(
-  //     locations
-  //       .filter((location) => location.city === selectedCity)
-  //       .map((location) => location.campus)
-  //   ),
-  // ];
-  // const floors = [
-  //   ...new Set(
-  //     locations
-  //       .filter((location) => location.campus === selectedCampus)
-  //       .map((location) => location.floor)
-  //   ),
-  // ];
-
-  // const getManagerDetails = useCallback(
-  //   async (id) => {
-  //     try {
-  //       const response2 = await axios.get(
-  //         `${baseurl}/getManagersByHOEIdFromTable/${id}`,
-  //         {
-  //           params: {
-  //             campus: selectedCampus,
-  //             floor: selectedFloor,
-  //             country: selectedCountry,
-  //             state: selectedState,
-  //             city: selectedCity,
-  //           },
-  //         }
-  //       );
-
-  //       setManagers(
-  //         response2.data.map((item) => ({
-  //           ...item,
-  //           name: item.first_name + " " + item.last_name,
-  //           seats_array: item.seats_data,
-  //         }))
-  //       );
-  //       if (response2.data.length > 0) {
-  //         if (selectedManager === "" && !isAddingManager) {
-  //           setSelectedManager({
-  //             ...response2.data[0],
-  //             name:
-  //               response2.data[0].first_name +
-  //               " " +
-  //               response2.data[0].last_name,
-  //             seats_array: response2.data[0].seats_data,
-  //           });
-  //         } else {
-  //           const managerDetails =
-  //             firstName !== "" && lastName !== ""
-  //               ? response2.data.filter(
-  //                   (item) =>
-  //                     item.first_name === firstName &&
-  //                     item.last_name === lastName
-  //                 )
-  //               : response2.data.filter(
-  //                   (item) => item.id === selectedManager.id
-  //                 );
-  //           setFirstName("");
-  //           setLastName("");
-  //           if (managerDetails.length === 0) {
-  //             setSelectedManager({
-  //               ...response2.data[0],
-  //               name:
-  //                 response2.data[0].first_name +
-  //                 " " +
-  //                 response2.data[0].last_name,
-  //               seats_array: response2.data[0].seats_data,
-  //             });
-  //           } else {
-  //             setSelectedManager({
-  //               ...managerDetails[0],
-  //               name:
-  //                 managerDetails[0].first_name +
-  //                 " " +
-  //                 managerDetails[0].last_name,
-  //               seats_array: managerDetails[0].seats_data,
-  //             });
-  //           }
-  //         }
-  //       } else {
-  //         setManagers([]);
-  //         setSelectedManager("");
-  //       }
-  //     } catch (err) {
-  //       console.error("Error fetching data:", err);
-  //     }
-  //   },
-  //   [selectedFloor, selectedCampus, selectedManager]
-  // );
-
+  
   const [teams, setTeams] = useState({});
 
   useEffect(() => {
@@ -564,6 +459,104 @@ const SeatAllocator = () => {
     }
   };
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  const [seatingNames, setSeatingNames] = useState([]);
+  const [selectedName, setSelectedName] = useState("");
+  const [arrangement, setArrangement] = useState([]);
+
+  useEffect(() => {
+    fetchSeatingNames();
+  }, []);
+
+  const fetchSeatingNames = async () => {
+    try {
+      const res = await axios.get(`${baseurl}/seating-names`);
+      setSeatingNames(res.data);
+    } catch (err) {
+      console.error("Error fetching seating names", err);
+    }
+  };
+
+  const fetchArrangement = async (name) => {
+    try {
+      const res = await axios.get(`${baseurl}/seating-arrangement/${name}`);
+      setArrangement(res.data);
+    } catch (err) {
+      console.error("Error fetching arrangement", err);
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      await axios.delete(`${baseurl}/seating-arrangement/${selectedName}`);
+      alert("Arrangement deleted");
+      setArrangement([]);
+      fetchSeatingNames();
+      setSelectedName("");
+    } catch (err) {
+      console.error("Error deleting arrangement", err);
+    }
+  };
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   return (
     <div style={{ padding: 20 }}>
       <h2>Seat Allocation System</h2>
@@ -608,6 +601,74 @@ const SeatAllocator = () => {
           Split Team
         </Button>
       </div>
+
+
+
+
+
+
+
+
+      <Paper sx={{ padding: 3, margin: 3 }}>
+      <Typography variant="h6">View & Manage Seating Arrangements</Typography>
+
+      <Select
+        value={selectedName}
+        onChange={(e) => {
+          setSelectedName(e.target.value);
+          fetchArrangement(e.target.value);
+        }}
+        displayEmpty
+        sx={{ marginTop: 2, minWidth: 300 }}
+      >
+        <MenuItem value="" disabled>Select an arrangement</MenuItem>
+        {seatingNames.map((name) => (
+          <MenuItem key={name} value={name}>
+            {name}
+          </MenuItem>
+        ))}
+      </Select>
+
+      {arrangement.length > 0 && (
+        <>
+          <Table sx={{ marginTop: 3 }}>
+            <TableHead>
+              <TableRow>
+                <TableCell>Manager Name</TableCell>
+                <TableCell>Team Name</TableCell>
+                <TableCell>Allocated Days</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {arrangement.map((row, index) => (
+                <TableRow key={index}>
+                  <TableCell>{row.manager_name}</TableCell>
+                  <TableCell>{row.team_name}</TableCell>
+                  <TableCell>{row.allocated_days}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          <Button
+            variant="outlined"
+            color="error"
+            onClick={handleDelete}
+            sx={{ marginTop: 2 }}
+          >
+            Delete This Arrangement
+          </Button>
+        </>
+      )}
+    </Paper>
+
+
+
+
+
+
+
+
+
 
       {/* Seat Allocation Settings */}
       <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
