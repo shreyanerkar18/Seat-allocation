@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useCallback, useContext } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
+
 import {
   Button,
   Grid,
@@ -63,6 +65,7 @@ const Hoe = () => {
   const [selectedCampus, setSelectedCampus] = useState("");
   const [selectedFloor, setSelectedFloor] = useState("");
   const [hoeId, setHoeId] = useState("");
+  const navigate = useNavigate();
 
   const { token } = useContext(AuthContext);
   // const decoded = jwtDecode(token);
@@ -843,7 +846,7 @@ const Hoe = () => {
           </Button>
         )}
 
-      {isSeatsChanging && isAddingManager && (
+      {/* {isSeatsChanging && isAddingManager && (
         <Paper elevation={0} style={{ padding: "20px", marginTop: "20px" }}>
           <TextField
             label="First Name"
@@ -913,6 +916,89 @@ const Hoe = () => {
           >
             Add Manager
           </Button>
+        </Paper>
+      )} */}
+      {isSeatsChanging && isAddingManager && (
+        <Paper elevation={0} style={{ padding: "20px", marginTop: "20px" }}>
+          <TextField
+            label="First Name"
+            name="firstname"
+            fullWidth
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            style={{ marginBottom: "15px" }}
+            autoFocus
+            onBlur={handleBlur}
+            error={!!firstNameError}
+            helperText={firstNameError}
+            color="success"
+          />
+          <TextField
+            label="Last Name"
+            name="lastname"
+            fullWidth
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+            style={{ marginBottom: "25px" }}
+            autoFocus
+            onBlur={handleBlur}
+            error={!!lastNameError}
+            helperText={lastNameError}
+            color="success"
+          />
+          <TextField
+            label="Seat Count"
+            type="number"
+            name="seatcount"
+            fullWidth
+            value={seatCount}
+            onChange={(e) => setSeatCount(parseInt(e.target.value))}
+            style={{ marginBottom: "25px" }}
+            inputProps={{
+              min: 1,
+              max: HOE.seats.length - countAllocatedSeats(),
+            }}
+          />
+          <TextField
+            label="Seats Selected Count"
+            name="seatsselectedcount"
+            fullWidth
+            value={selectedSeatCount}
+            style={{ marginBottom: "25px" }}
+            InputProps={{
+              readOnly: true,
+            }}
+            autoFocus
+          />
+          <TextField
+            label="Selected Seats"
+            name="selectedseats"
+            fullWidth
+            value={seatData[selectedDay].join(", ")}
+            style={{ marginBottom: "25px" }}
+            InputProps={{
+              readOnly: true,
+            }}
+            autoFocus
+          />
+
+          <Box display="flex" gap={2}>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={onClickingAddManager}
+            >
+              Add Manager
+            </Button>
+
+            <Button
+              variant="contained"
+              color="secondary"
+              onClick={() => navigate("/hoeplan")}
+            >
+              Manage Seating Arrangement
+            </Button>
+          </Box>
         </Paper>
       )}
 
