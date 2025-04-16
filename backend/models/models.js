@@ -1209,21 +1209,100 @@ const getManagerTeams = async () => {
   return result.rows;
 };
 
+// const saveSeatingArrangement = async (allocations) => {
+
+//   console.log(allocations);
+//   const {allocationName, schedule, teams, daysRequired} = allocations;
+
+//   console.log(allocationName, schedule, teams, daysRequired);
+//   try {
+//     const client = await pool.connect();
+//     try {
+//       await client.query("BEGIN");
+
+//       let insertedRows = [];
+
+//       for (const teamName in schedule) {
+//         const allocatedDays = schedule[teamName]; // e.g., ['Monday', 'Wednesday']
+//         const teamSize = teams[teamName];
+
+//         const managerRes = await client.query(
+//           "SELECT id FROM manager_allocation WHERE first_name = $1",
+//           [teamName]
+//         );
+
+//         if (managerRes.rowCount === 0) {
+//           throw new Error(`No manager found for team ${teamName}`);
+//         }
+
+//         const managerId = managerRes.rows[0].id;
+
+//         console.log(managerId,
+//           teamName,
+//           teamSize,
+//           parseInt(daysRequired),
+//           allocationName,
+//           allocatedDays.join(","));
+
+//         const sql = `INSERT INTO manager_seat_allocations 
+//           (manager_id, team_name, team_size, required_days, seating_allocation_name, allocated_days)
+//           VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`;
+
+//         const values = [
+//           managerId,
+//           teamName,
+//           teamSize,
+//           parseInt(daysRequired),
+//           allocationName,
+//           allocatedDays.join(","),
+//         ];
+
+//         const { rows } = await client.query(sql, values);
+//         insertedRows.push(rows[0]);
+//       }
+
+//       await client.query("COMMIT");
+//       return insertedRows;
+//     } catch (err) {
+//       await client.query("ROLLBACK");
+//       console.error("Transaction error in saveSeatingArrangement:", err);
+//       throw err;
+//     } finally {
+//       client.release();
+//     }
+//   } catch (err) {
+//     console.error("Error acquiring client in saveSeatingArrangement:", err);
+//     throw err;
+//   }
+// };
+
+
+
+
 const saveSeatingArrangement = async (allocations) => {
-
   console.log(allocations);
-  const {allocationName, schedule, teams, daysRequired} = allocations;
-
+  const { allocationName, schedule, teams, daysRequired } = allocations;
   console.log(allocationName, schedule, teams, daysRequired);
+
   try {
     const client = await pool.connect();
     try {
+      // ✅ Step 1: Check if allocation name already exists
+      const checkRes = await client.query(
+        "SELECT COUNT(*) FROM manager_seat_allocations WHERE seating_allocation_name = $1",
+        [allocationName]
+      );
+
+      if (parseInt(checkRes.rows[0].count) > 0) {
+        throw new Error("Seating arrangement name already exists.");
+      }
+
       await client.query("BEGIN");
 
       let insertedRows = [];
 
       for (const teamName in schedule) {
-        const allocatedDays = schedule[teamName]; // e.g., ['Monday', 'Wednesday']
+        const allocatedDays = schedule[teamName];
         const teamSize = teams[teamName];
 
         const managerRes = await client.query(
@@ -1236,13 +1315,6 @@ const saveSeatingArrangement = async (allocations) => {
         }
 
         const managerId = managerRes.rows[0].id;
-
-        console.log(managerId,
-          teamName,
-          teamSize,
-          parseInt(daysRequired),
-          allocationName,
-          allocatedDays.join(","));
 
         const sql = `INSERT INTO manager_seat_allocations 
           (manager_id, team_name, team_size, required_days, seating_allocation_name, allocated_days)
@@ -1275,6 +1347,17 @@ const saveSeatingArrangement = async (allocations) => {
     throw err;
   }
 };
+
+
+
+
+
+
+
+
+
+
+
 
 const getSeatingAllocationNames = async () => {
   const query = `SELECT DISTINCT seating_allocation_name FROM manager_seat_allocations ORDER BY seating_allocation_name;`;
