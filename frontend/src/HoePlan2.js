@@ -556,60 +556,6 @@ const SeatAllocator = () => {
         </Button>
       </div>
 
-      <Paper sx={{ padding: 3, margin: 3 }}>
-        <Typography variant="h6">View & Manage Seating Arrangements</Typography>
-
-        <Select
-          value={selectedName}
-          onChange={(e) => {
-            setSelectedName(e.target.value);
-            fetchArrangement(e.target.value);
-          }}
-          displayEmpty
-          sx={{ marginTop: 2, minWidth: 300 }}
-        >
-          <MenuItem value="" disabled>
-            Select an arrangement
-          </MenuItem>
-          {seatingNames.map((name) => (
-            <MenuItem key={name} value={name}>
-              {name}
-            </MenuItem>
-          ))}
-        </Select>
-
-        {arrangement.length > 0 && (
-          <>
-            <Table sx={{ marginTop: 3 }}>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Manager Name</TableCell>
-                  <TableCell>Team Name</TableCell>
-                  <TableCell>Allocated Days</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {arrangement.map((row, index) => (
-                  <TableRow key={index}>
-                    <TableCell>{row.manager_name}</TableCell>
-                    <TableCell>{row.team_name}</TableCell>
-                    <TableCell>{row.allocated_days}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            <Button
-              variant="outlined"
-              color="error"
-              onClick={handleDelete}
-              sx={{ marginTop: 2 }}
-            >
-              Delete This Arrangement
-            </Button>
-          </>
-        )}
-      </Paper>
-
       {/* Seat Allocation Settings */}
       <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
         <TextField
