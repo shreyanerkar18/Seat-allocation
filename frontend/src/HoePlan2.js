@@ -43,7 +43,7 @@ const SeatAllocator = () => {
   const [lastName, setLastName] = useState("");
   const [locations, setLocations] = useState([]);
 
-  
+
   const [teams, setTeams] = useState({});
 
   useEffect(() => {
@@ -332,8 +332,8 @@ const SeatAllocator = () => {
             preferences[team]?.[day] &&
             !assignedDays[team].includes(day) &&
             newSchedule[day].reduce((sum, t) => sum + teams[t], 0) +
-              teams[team] <=
-              totalSeats
+            teams[team] <=
+            totalSeats
         );
 
         let allocated = false;
@@ -351,8 +351,8 @@ const SeatAllocator = () => {
             (day) =>
               !assignedDays[team].includes(day) &&
               newSchedule[day].reduce((sum, t) => sum + teams[t], 0) +
-                teams[team] <=
-                totalSeats
+              teams[team] <=
+              totalSeats
           );
 
           for (let day of fallbackDays) {
@@ -412,13 +412,8 @@ const SeatAllocator = () => {
         });
       });
 
-      console.log("abbc",formattedSchedule);
+      console.log("abbc", formattedSchedule);
       const payload = {
-        // allocationName: seatingArrangementName,
-        // schedule: formattedSchedule,
-        // teams, // this is already in { teamName: size } format
-        // daysRequired: daysRequired,
-
         allocationName: seatingArrangementName,
         schedule: formattedSchedule,
         teams,
@@ -428,37 +423,23 @@ const SeatAllocator = () => {
       console.log("pay", payload);
 
       await axios.post(`${baseurl}/saveSeatingArrangement`, payload);
-      // await axios.post(`${baseurl}/saveSeatingArrangement`, payload, {
-      //   headers: { "Content-Type": "application/json" },
-      // });
-      
-
       alert("Seating arrangement saved successfully!");
       setShowSavePrompt(false);
       setSeatingArrangementName("");
     } catch (error) {
-      console.error("Error saving seating arrangement:", error);
-      alert("Failed to save. Please try again.");
+      console.error("Error saving seating arrangement:", error.message);
+      if (error.response) {
+        console.error("Response data:", error.response.data);
+        console.error("Status:", error.response.status);
+      }
+      if (error.response && error.response.status === 400) {
+        alert(error.response.data.error); // Shows: "Seating arrangement name already exists. Please choose a different name."
+      } else {
+        alert("Failed to save. Please try again.");
+      }
     }
+
   };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  
-
   const [seatingNames, setSeatingNames] = useState([]);
   const [selectedName, setSelectedName] = useState("");
   const [arrangement, setArrangement] = useState([]);
@@ -496,49 +477,6 @@ const SeatAllocator = () => {
       console.error("Error deleting arrangement", err);
     }
   };
-
-  
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
   return (
     <div style={{ padding: 20 }}>
@@ -584,74 +522,7 @@ const SeatAllocator = () => {
           Split Team
         </Button>
       </div>
-
-
-
-
-
-
-
-
-      <Paper sx={{ padding: 3, margin: 3 }}>
-      <Typography variant="h6">View & Manage Seating Arrangements</Typography>
-
-      <Select
-        value={selectedName}
-        onChange={(e) => {
-          setSelectedName(e.target.value);
-          fetchArrangement(e.target.value);
-        }}
-        displayEmpty
-        sx={{ marginTop: 2, minWidth: 300 }}
-      >
-        <MenuItem value="" disabled>Select an arrangement</MenuItem>
-        {seatingNames.map((name) => (
-          <MenuItem key={name} value={name}>
-            {name}
-          </MenuItem>
-        ))}
-      </Select>
-
-      {arrangement.length > 0 && (
-        <>
-          <Table sx={{ marginTop: 3 }}>
-            <TableHead>
-              <TableRow>
-                <TableCell>Manager Name</TableCell>
-                <TableCell>Team Name</TableCell>
-                <TableCell>Allocated Days</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {arrangement.map((row, index) => (
-                <TableRow key={index}>
-                  <TableCell>{row.manager_name}</TableCell>
-                  <TableCell>{row.team_name}</TableCell>
-                  <TableCell>{row.allocated_days}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          <Button
-            variant="outlined"
-            color="error"
-            onClick={handleDelete}
-            sx={{ marginTop: 2 }}
-          >
-            Delete This Arrangement
-          </Button>
-        </>
-      )}
-    </Paper>
-
-
-
-
-
-
-
-
-
+      
 
       {/* Seat Allocation Settings */}
       <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
@@ -779,6 +650,63 @@ const SeatAllocator = () => {
       )}
       {/* Minimum Required Seats */}
       <h3>Minimum Required Seats: {minSeatsRequired}</h3>
+
+
+      <Paper sx={{ padding: 3, margin: 3 }}>
+        <div>
+          <Typography variant="h6">View Seating Arrangements</Typography>
+
+          <Select
+            value={selectedName}
+            onChange={(e) => {
+              setSelectedName(e.target.value);
+              fetchArrangement(e.target.value);
+            }}
+            displayEmpty
+            sx={{ marginTop: 2, minWidth: 300 }}
+          >
+            <MenuItem value="" disabled>Select an arrangement</MenuItem>
+            {seatingNames.map((name) => (
+              <MenuItem key={name} value={name}>
+                {name}
+              </MenuItem>
+            ))}
+          </Select>
+
+
+          {arrangement.length > 0 && (
+            <>
+              <Table sx={{ marginTop: 3 }}>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Manager Name</TableCell>
+                    <TableCell>Team Name</TableCell>
+                    <TableCell>Allocated Days</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {arrangement.map((row, index) => (
+                    <TableRow key={index}>
+                      <TableCell>{row.team_name}</TableCell>
+                      <TableCell>{row.team_name}</TableCell>
+                      <TableCell>{row.allocated_days}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <Button
+                variant="outlined"
+                color="error"
+                onClick={handleDelete}
+                sx={{ marginTop: 2 }}
+              >
+                Delete This Arrangement
+              </Button>
+            </>
+          )}
+
+        </div>
+      </Paper>
 
       {/* Seat Allocation Table */}
       <TableContainer component={Paper}>

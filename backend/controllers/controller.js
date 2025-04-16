@@ -750,28 +750,46 @@ exports.getManagerTeamsController = async (req, res) => {
   }
 };
 
+// exports.saveSeatingArrangement = async (req, res) => {
+//   try {
+//     const allocations = req.body;
+//     const result = await models.saveSeatingArrangement(allocations);
+//     res
+//       .status(200)
+//       .json({ message: "Seating arrangement saved successfully", result });
+//   } catch (error) {
+//     console.error("Error saving seating arrangement:", error);
+//     res
+//       .status(500)
+//       .json({ error: "Failed to save seating arrangement. Please try again." });
+//   }
+// };
+
+
+
+
+
+
 exports.saveSeatingArrangement = async (req, res) => {
   try {
     const allocations = req.body;
-
-    // if (!Array.isArray(allocations) || allocations.length === 0) {
-    //   return res
-    //     .status(400)
-    //     .json({ error: "Invalid or empty allocation data" });
-    // }
-
     const result = await models.saveSeatingArrangement(allocations);
-
-    res
-      .status(200)
-      .json({ message: "Seating arrangement saved successfully", result });
+    res.status(200).json({ message: "Seating arrangement saved successfully", result });
   } catch (error) {
     console.error("Error saving seating arrangement:", error);
-    res
-      .status(500)
-      .json({ error: "Failed to save seating arrangement. Please try again." });
+
+    if (error.message === "Seating arrangement name already exists.") {
+      res.status(400).json({ error: "Seating arrangement name already exists. Please choose a different name." });
+    } else {
+      res.status(500).json({ error: "Failed to save seating arrangement. Please try again." });
+    }
   }
 };
+
+
+
+
+
 
 
 exports.getSeatingAllocationNames = async (req, res) => {
