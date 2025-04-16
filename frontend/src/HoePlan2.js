@@ -4,31 +4,42 @@ import React, { useRef, useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import { baseurl } from "./utils";
 // import { Button, Container, Grid, Typography } from "@mui/material";
-
 import {
-  TextField,
+  Box,
   Button,
+  Grid,
+  TextField,
+  Paper,
+  Typography,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
-  IconButton,
-  Checkbox,
-  Box,
-  FormControl,
-  InputLabel,
   Select,
   MenuItem,
-  Typography,
+  Checkbox,
+  IconButton,
+  InputAdornment,
 } from "@mui/material";
-
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import CheckIcon from "@mui/icons-material/Check";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
-import CheckIcon from "@mui/icons-material/Check";
 import UndoIcon from "@mui/icons-material/Undo";
+
+const StyledCard = ({ title, children }) => (
+  <Card sx={{ mb: 3, borderRadius: 4, boxShadow: 3 }}>
+    <CardContent>
+      <Typography variant="h6" gutterBottom>
+        {title}
+      </Typography>
+      {children}
+    </CardContent>
+  </Card>
+);
 
 const SeatAllocator = () => {
   const [selectedCountry, setSelectedCountry] = useState("");
@@ -43,7 +54,6 @@ const SeatAllocator = () => {
   const [lastName, setLastName] = useState("");
   const [locations, setLocations] = useState([]);
 
-  
   const [teams, setTeams] = useState({});
 
   useEffect(() => {
@@ -412,7 +422,7 @@ const SeatAllocator = () => {
         });
       });
 
-      console.log("abbc",formattedSchedule);
+      console.log("abbc", formattedSchedule);
       const payload = {
         // allocationName: seatingArrangementName,
         // schedule: formattedSchedule,
@@ -431,7 +441,6 @@ const SeatAllocator = () => {
       // await axios.post(`${baseurl}/saveSeatingArrangement`, payload, {
       //   headers: { "Content-Type": "application/json" },
       // });
-      
 
       alert("Seating arrangement saved successfully!");
       setShowSavePrompt(false);
@@ -441,23 +450,6 @@ const SeatAllocator = () => {
       alert("Failed to save. Please try again.");
     }
   };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  
 
   const [seatingNames, setSeatingNames] = useState([]);
   const [selectedName, setSelectedName] = useState("");
@@ -485,7 +477,24 @@ const SeatAllocator = () => {
     }
   };
 
+  // const handleDelete = async () => {
+  //   try {
+  //     await axios.delete(`${baseurl}/seating-arrangement/${selectedName}`);
+  //     alert("Arrangement deleted");
+  //     setArrangement([]);
+  //     fetchSeatingNames();
+  //     setSelectedName("");
+  //   } catch (err) {
+  //     console.error("Error deleting arrangement", err);
+  //   }
+  // };
+
   const handleDelete = async () => {
+    const confirmed = window.confirm(
+      `Are you sure you want to delete the arrangement "${selectedName}"?`
+    );
+    if (!confirmed) return;
+
     try {
       await axios.delete(`${baseurl}/seating-arrangement/${selectedName}`);
       alert("Arrangement deleted");
@@ -497,49 +506,6 @@ const SeatAllocator = () => {
     }
   };
 
-  
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   return (
     <div style={{ padding: 20 }}>
       <h2>Seat Allocation System</h2>
@@ -550,14 +516,16 @@ const SeatAllocator = () => {
           label="Manager Name"
           value={managerName}
           onChange={(e) => setManagerName(e.target.value)}
+          size="small" // Small size for TextField
         />
         <TextField
           label="Team Size"
           type="number"
           value={teamSize}
           onChange={(e) => setTeamSize(e.target.value)}
+          size="small" // Small size for TextField
         />
-        <Button variant="contained" onClick={addManager}>
+        <Button variant="contained" onClick={addManager} size="small">
           Add Manager
         </Button>
       </div>
@@ -568,90 +536,33 @@ const SeatAllocator = () => {
           label="Manager Name to Split"
           value={splitManagerName}
           onChange={(e) => setSplitManagerName(e.target.value)}
+          size="small" // Small size for TextField
         />
         <TextField
           label="Number of Teams"
           type="number"
           value={numSubTeams}
           onChange={(e) => setNumSubTeams(e.target.value)}
+          size="small" // Small size for TextField
         />
         <TextField
           label="Sizes of New Teams (comma-separated)"
           value={subTeamSizes}
           onChange={(e) => setSubTeamSizes(e.target.value)}
+          size="small" // Small size for TextField
         />
-        <Button variant="contained" color="warning" onClick={splitTeam}>
+        <Button
+          variant="contained"
+          color="warning"
+          onClick={splitTeam}
+          size="small"
+        >
           Split Team
         </Button>
       </div>
 
-
-
-
-
-
-
-
-      <Paper sx={{ padding: 3, margin: 3 }}>
-      <Typography variant="h6">View & Manage Seating Arrangements</Typography>
-
-      <Select
-        value={selectedName}
-        onChange={(e) => {
-          setSelectedName(e.target.value);
-          fetchArrangement(e.target.value);
-        }}
-        displayEmpty
-        sx={{ marginTop: 2, minWidth: 300 }}
-      >
-        <MenuItem value="" disabled>Select an arrangement</MenuItem>
-        {seatingNames.map((name) => (
-          <MenuItem key={name} value={name}>
-            {name}
-          </MenuItem>
-        ))}
-      </Select>
-
-      {arrangement.length > 0 && (
-        <>
-          <Table sx={{ marginTop: 3 }}>
-            <TableHead>
-              <TableRow>
-                <TableCell>Manager Name</TableCell>
-                <TableCell>Team Name</TableCell>
-                <TableCell>Allocated Days</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {arrangement.map((row, index) => (
-                <TableRow key={index}>
-                  <TableCell>{row.manager_name}</TableCell>
-                  <TableCell>{row.team_name}</TableCell>
-                  <TableCell>{row.allocated_days}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          <Button
-            variant="outlined"
-            color="error"
-            onClick={handleDelete}
-            sx={{ marginTop: 2 }}
-          >
-            Delete This Arrangement
-          </Button>
-        </>
-      )}
-    </Paper>
-
-
-
-
-
-
-
-
-
+      {/* Seating Arrangement Management Section */}
+      <h3>Manage Seating Arrangements</h3>
 
       {/* Seat Allocation Settings */}
       <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
@@ -660,14 +571,21 @@ const SeatAllocator = () => {
           type="number"
           value={totalSeats}
           onChange={(e) => setTotalSeats(parseInt(e.target.value))}
+          size="small" // Small size for TextField
         />
         <TextField
           label="Days Required"
           type="number"
           value={daysRequired}
           onChange={(e) => setDaysRequired(parseInt(e.target.value))}
+          size="small" // Small size for TextField
         />
-        <Button variant="contained" color="primary" onClick={allocateSeats}>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={allocateSeats}
+          size="small"
+        >
           Allocate Seats
         </Button>
         <Button
@@ -675,10 +593,12 @@ const SeatAllocator = () => {
           color="primary"
           onClick={allocateSeatsWithPreference}
           style={{ marginLeft: 10 }}
+          size="small" // Small size for Button
         >
           Allocate Seats with Preference
         </Button>
       </div>
+
       {showPreferences && (
         <div style={{ marginTop: 20 }}>
           <TableContainer
@@ -686,10 +606,11 @@ const SeatAllocator = () => {
             style={{ marginTop: 20, width: "80%", margin: "auto" }}
           >
             <h3 style={{ textAlign: "center" }}>Preference Table</h3>
-            <Table>
+            <Table size="small">
+              {" "}
+              {/* Small size for Table */}
               <TableHead>
                 <TableRow>
-                  {/* <TableCell>Manager (Team Size)</TableCell> */}
                   <TableCell>Manager</TableCell>
                   <TableCell>Team Size</TableCell>
                   {weekDays.map((day) => (
@@ -706,11 +627,12 @@ const SeatAllocator = () => {
                           <TextField
                             value={editedManager}
                             onChange={(e) => setEditedManager(e.target.value)}
-                            size="small"
+                            size="small" // Small size for TextField
                           />
                           <IconButton
                             onClick={() => saveManagerEdit(manager)}
                             style={{ color: "green" }}
+                            size="small" // Small size for IconButton
                           >
                             <CheckIcon fontSize="small" />
                           </IconButton>
@@ -721,6 +643,7 @@ const SeatAllocator = () => {
                               setEditableRow(null); // Exit edit mode
                             }}
                             style={{ color: "black" }}
+                            size="small" // Small size for IconButton
                           >
                             <UndoIcon fontSize="small" />
                           </IconButton>
@@ -728,10 +651,16 @@ const SeatAllocator = () => {
                       ) : (
                         <>
                           {manager}
-                          <IconButton onClick={() => editManager(manager)}>
+                          <IconButton
+                            onClick={() => editManager(manager)}
+                            size="small"
+                          >
                             <EditIcon fontSize="small" />
                           </IconButton>
-                          <IconButton onClick={() => removeManager(manager)}>
+                          <IconButton
+                            onClick={() => removeManager(manager)}
+                            size="small"
+                          >
                             <DeleteIcon fontSize="small" />
                           </IconButton>
                         </>
@@ -743,7 +672,7 @@ const SeatAllocator = () => {
                           type="number"
                           value={editedTeamSize}
                           onChange={(e) => setEditedTeamSize(e.target.value)}
-                          size="small"
+                          size="small" // Small size for TextField
                         />
                       ) : (
                         teams[manager]
@@ -754,6 +683,7 @@ const SeatAllocator = () => {
                         <Checkbox
                           checked={preferences[manager]?.[day] || false}
                           onChange={() => handlePreferenceChange(manager, day)}
+                          size="small" // Small size for Checkbox
                         />
                       </TableCell>
                     ))}
@@ -771,22 +701,84 @@ const SeatAllocator = () => {
               variant="contained"
               color="success"
               onClick={allocateSeatsConsideringPreference}
+              size="small" // Small size for Button
             >
               Allocate
             </Button>
           </div>
         </div>
       )}
+
+      <Paper sx={{ padding: 3, margin: 3 }}>
+        <div>
+          <Typography variant="h6">View Seating Arrangements</Typography>
+
+          <Select
+            value={selectedName}
+            onChange={(e) => {
+              setSelectedName(e.target.value);
+              fetchArrangement(e.target.value);
+            }}
+            displayEmpty
+            sx={{ marginTop: 2, minWidth: 300 }}
+          >
+            <MenuItem value="" disabled>
+              Select an arrangement
+            </MenuItem>
+            {seatingNames.map((name) => (
+              <MenuItem key={name} value={name}>
+                {name}
+              </MenuItem>
+            ))}
+          </Select>
+
+          {arrangement.length > 0 && (
+            <>
+              <Table sx={{ marginTop: 3 }}>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Manager Name</TableCell>
+                    <TableCell>Team Name</TableCell>
+                    <TableCell>Allocated Days</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {arrangement.map((row, index) => (
+                    <TableRow key={index}>
+                      <TableCell>{row.team_name}</TableCell>
+                      <TableCell>{row.team_name}</TableCell>
+                      <TableCell>{row.allocated_days}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <Button
+                variant="outlined"
+                color="error"
+                onClick={handleDelete}
+                sx={{ marginTop: 2 }}
+              >
+                Delete This Arrangement
+              </Button>
+            </>
+          )}
+        </div>
+      </Paper>
+
       {/* Minimum Required Seats */}
-      <h3>Minimum Required Seats: {minSeatsRequired}</h3>
+      {/* <h3>Minimum Required Seats: {minSeatsRequired}</h3> */}
 
       {/* Seat Allocation Table */}
-      <TableContainer component={Paper}>
-        <Table>
+      <TableContainer sx={{ marginTop: 2, padding: 2 }}>
+        <Table sx={{ minWidth: 600 }}>
           <TableHead>
             <TableRow>
               <TableCell
-                sx={{ borderRight: "1px solid #ddd", fontWeight: "bold" }}
+                sx={{
+                  borderRight: "1px solid #ddd",
+                  fontWeight: "bold",
+                  backgroundColor: "#f0f0f0", // Highlight first row
+                }}
               >
                 Day
               </TableCell>
@@ -794,18 +786,25 @@ const SeatAllocator = () => {
                 Object.keys(teams).map((manager) => (
                   <TableCell
                     key={manager}
-                    sx={{ borderRight: "1px solid #ddd", fontWeight: "bold" }}
+                    sx={{
+                      borderRight: "1px solid #ddd",
+                      fontWeight: "bold",
+                      backgroundColor: "#f0f0f0", // Highlight first row
+                    }}
                   >
                     {`${manager} (${teams[manager]})`}
                   </TableCell>
                 ))}
-              <TableCell sx={{ fontWeight: "bold" }}>Total Seats</TableCell>
+              <TableCell
+                sx={{ fontWeight: "bold", backgroundColor: "#f0f0f0" }}
+              >
+                Total Seats
+              </TableCell>
             </TableRow>
           </TableHead>
 
           <TableBody>
             {weekDays.map((day) => {
-              // Calculate total seats allocated for this day
               const totalSeatsForDay = Object.keys(teams).reduce(
                 (sum, team) => {
                   return schedule && schedule[day].includes(team)
@@ -817,13 +816,22 @@ const SeatAllocator = () => {
 
               return (
                 <TableRow key={day}>
-                  <TableCell sx={{ borderRight: "1px solid #ddd" }}>
+                  <TableCell
+                    sx={{
+                      borderRight: "1px solid #ddd",
+                      backgroundColor: "#f9f9f9", // Highlight first column
+                      fontWeight: "bold",
+                    }}
+                  >
                     {day}
                   </TableCell>
                   {Object.keys(teams).map((team) => (
                     <TableCell
                       key={team}
-                      sx={{ borderRight: "1px solid #ddd" }}
+                      sx={{
+                        borderRight: "1px solid #ddd",
+                        textAlign: "center",
+                      }}
                     >
                       {schedule && schedule[day].includes(team)
                         ? teams[team]
@@ -845,6 +853,7 @@ const SeatAllocator = () => {
               variant="contained"
               color="success"
               onClick={() => setShowSavePrompt(true)}
+              size="small" // Small size for Button
             >
               Save Seating Arrangement
             </Button>
@@ -861,11 +870,13 @@ const SeatAllocator = () => {
                 label="Seating Arrangement Name"
                 value={seatingArrangementName}
                 onChange={(e) => setSeatingArrangementName(e.target.value)}
+                size="small" // Small size for TextField
               />
               <Button
                 variant="contained"
                 color="primary"
                 onClick={handleSaveSeatingArrangement}
+                size="small" // Small size for Button
               >
                 Save
               </Button>
@@ -875,6 +886,7 @@ const SeatAllocator = () => {
                   setShowSavePrompt(false);
                   setSeatingArrangementName("");
                 }}
+                size="small" // Small size for Button
               >
                 Cancel
               </Button>
