@@ -36,6 +36,9 @@ router.put("/removeSeatsForHOE", controller.removeSeatsForHOE);
 //for manager teams
 router.get("/getManagerTeams", controller.getManagerTeamsController);
 router.post("/saveSeatingArrangement", controller.saveSeatingArrangement);
+router.get("/seating-names", controller.getSeatingAllocationNames);
+router.get("/seating-arrangement/:name", controller.getSeatingArrangementByName);
+router.delete("/seating-arrangement/:name", controller.deleteSeatingArrangement);
 
 //HOE page routes
 router.get("/getHoeIdFromTable", controller.getHoeIdFromTable);

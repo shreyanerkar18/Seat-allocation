@@ -1209,12 +1209,12 @@ const getManagerTeams = async () => {
   return result.rows;
 };
 
-const saveSeatingArrangement = async (
-  allocationName,
-  schedule,
-  teams,
-  daysRequired
-) => {
+const saveSeatingArrangement = async (allocations) => {
+
+  console.log(allocations);
+  const {allocationName, schedule, teams, daysRequired} = allocations;
+
+  console.log(allocationName, schedule, teams, daysRequired);
   try {
     const client = await pool.connect();
     try {
@@ -1227,7 +1227,7 @@ const saveSeatingArrangement = async (
         const teamSize = teams[teamName];
 
         const managerRes = await client.query(
-          "SELECT id FROM manager_allocation WHERE team_name = $1",
+          "SELECT id FROM manager_allocation WHERE first_name = $1",
           [teamName]
         );
 
@@ -1236,6 +1236,13 @@ const saveSeatingArrangement = async (
         }
 
         const managerId = managerRes.rows[0].id;
+
+        console.log(managerId,
+          teamName,
+          teamSize,
+          parseInt(daysRequired),
+          allocationName,
+          allocatedDays.join(","));
 
         const sql = `INSERT INTO manager_seat_allocations 
           (manager_id, team_name, team_size, required_days, seating_allocation_name, allocated_days)
@@ -1267,6 +1274,34 @@ const saveSeatingArrangement = async (
     console.error("Error acquiring client in saveSeatingArrangement:", err);
     throw err;
   }
+};
+
+const getSeatingAllocationNames = async () => {
+  const query = `SELECT DISTINCT seating_allocation_name FROM manager_seat_allocations ORDER BY seating_allocation_name;`;
+  const { rows } = await pool.query(query);
+  return rows.map(row => row.seating_allocation_name);
+};
+
+// 2. Get seating arrangement details by allocation name
+const getSeatingArrangementByName = async (allocationName) => {
+  const query = `
+    SELECT 
+      m.first_name,
+      msa.team_name,
+      msa.allocated_days
+    FROM manager_seat_allocations msa
+    JOIN manager_allocation m ON msa.manager_id = m.id
+    WHERE msa.seating_allocation_name = $1;
+  `;
+  const { rows } = await pool.query(query, [allocationName]);
+  return rows;
+};
+
+// 3. Delete all records for a given seating allocation name
+const deleteSeatingArrangement = async (allocationName) => {
+  const query = `DELETE FROM manager_seat_allocations WHERE seating_allocation_name = $1;`;
+  const result = await pool.query(query, [allocationName]);
+  return result.rowCount;
 };
 
 module.exports = {
@@ -1311,4 +1346,7 @@ module.exports = {
   getManagerSeatAllocations,
   getManagerTeams,
   saveSeatingArrangement,
+  getSeatingAllocationNames,
+  getSeatingArrangementByName,
+  deleteSeatingArrangement,
 };

@@ -1,5 +1,6 @@
 // import React, { useState } from "react";
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useRef, useEffect, useState, useCallback } from "react";
+
 import axios from "axios";
 import { baseurl } from "./utils";
 // import { Button, Container, Grid, Typography } from "@mui/material";
@@ -21,6 +22,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Typography,
 } from "@mui/material";
 
 import EditIcon from "@mui/icons-material/Edit";
@@ -34,128 +36,14 @@ const SeatAllocator = () => {
   const [selectedCity, setSelectedCity] = useState("");
   const [selectedCampus, setSelectedCampus] = useState("");
   const [selectedFloor, setSelectedFloor] = useState("");
-  const [hoeId, setHoeId] = useState("");
   const [managers, setManagers] = useState([]); // to store and update all managers under HOE
   const [selectedManager, setSelectedManager] = useState(""); // to store and update selected manager in drop-down
   const [isAddingManager, setIsAddingManager] = useState(false);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [firstNameError, setFirstNameError] = useState("");
-  const [lastNameError, setLastNameError] = useState("");
-  const [isSeatsChanging, setIsSeatsChanging] = useState(false);
-  const [selectedSeats, setSelectedSeats] = useState([]); // to store seats while selecting
-  const [HoeList, setHoeList] = useState([]);
-  const [HOE, setHoe] = useState({}); // to store and update HOE
-
   const [locations, setLocations] = useState([]);
 
-  const countries = [...new Set(locations.map((location) => location.country))];
-  const states = [
-    ...new Set(
-      locations
-        .filter((location) => location.country === selectedCountry)
-        .map((location) => location.state)
-    ),
-  ];
-  const cities = [
-    ...new Set(
-      locations
-        .filter((location) => location.state === selectedState)
-        .map((location) => location.city)
-    ),
-  ];
-  const campuses = [
-    ...new Set(
-      locations
-        .filter((location) => location.city === selectedCity)
-        .map((location) => location.campus)
-    ),
-  ];
-  const floors = [
-    ...new Set(
-      locations
-        .filter((location) => location.campus === selectedCampus)
-        .map((location) => location.floor)
-    ),
-  ];
-
-  const getManagerDetails = useCallback(
-    async (id) => {
-      try {
-        const response2 = await axios.get(
-          `${baseurl}/getManagersByHOEIdFromTable/${id}`,
-          {
-            params: {
-              campus: selectedCampus,
-              floor: selectedFloor,
-              country: selectedCountry,
-              state: selectedState,
-              city: selectedCity,
-            },
-          }
-        );
-
-        setManagers(
-          response2.data.map((item) => ({
-            ...item,
-            name: item.first_name + " " + item.last_name,
-            seats_array: item.seats_data,
-          }))
-        );
-        if (response2.data.length > 0) {
-          if (selectedManager === "" && !isAddingManager) {
-            setSelectedManager({
-              ...response2.data[0],
-              name:
-                response2.data[0].first_name +
-                " " +
-                response2.data[0].last_name,
-              seats_array: response2.data[0].seats_data,
-            });
-          } else {
-            const managerDetails =
-              firstName !== "" && lastName !== ""
-                ? response2.data.filter(
-                    (item) =>
-                      item.first_name === firstName &&
-                      item.last_name === lastName
-                  )
-                : response2.data.filter(
-                    (item) => item.id === selectedManager.id
-                  );
-            setFirstName("");
-            setLastName("");
-            if (managerDetails.length === 0) {
-              setSelectedManager({
-                ...response2.data[0],
-                name:
-                  response2.data[0].first_name +
-                  " " +
-                  response2.data[0].last_name,
-                seats_array: response2.data[0].seats_data,
-              });
-            } else {
-              setSelectedManager({
-                ...managerDetails[0],
-                name:
-                  managerDetails[0].first_name +
-                  " " +
-                  managerDetails[0].last_name,
-                seats_array: managerDetails[0].seats_data,
-              });
-            }
-          }
-        } else {
-          setManagers([]);
-          setSelectedManager("");
-        }
-      } catch (err) {
-        console.error("Error fetching data:", err);
-      }
-    },
-    [selectedFloor, selectedCampus, selectedManager]
-  );
-
+  
   const [teams, setTeams] = useState({});
 
   useEffect(() => {
@@ -169,7 +57,7 @@ const SeatAllocator = () => {
           formatted[team.first_name] = parseInt(team.team_size);
         });
 
-        console.log(formatted);
+        console.log("for", formatted);
 
         setTeams(formatted);
       } catch (error) {
@@ -200,6 +88,8 @@ const SeatAllocator = () => {
   const [numSubTeams, setNumSubTeams] = useState("");
   const [subTeamSizes, setSubTeamSizes] = useState("");
   const [minSeatsRequired, setMinSeatsRequired] = useState(null);
+  const [previousDaysRequired, setPreviousDaysRequired] =
+    useState(daysRequired);
 
   // save button
   const [seatingArrangementName, setSeatingArrangementName] = useState("");
@@ -215,59 +105,13 @@ const SeatAllocator = () => {
 
     let minSeats = Math.ceil(totalTeamDays / 5);
 
-    let tempTotalSeats = minSeats;
-    let allocationPossible = false;
-
-    while (!allocationPossible) {
-      let newSchedule = {
-        Monday: [],
-        Tuesday: [],
-        Wednesday: [],
-        Thursday: [],
-        Friday: [],
-      };
-      let assignedDays = {};
-
-      for (let team in teams) {
-        assignedDays[team] = [];
-      }
-
-      function canAddTeam(day, team) {
-        let currentSeats = newSchedule[day].reduce(
-          (sum, t) => sum + teams[t],
-          0
-        );
-        return currentSeats + teams[team] <= tempTotalSeats;
-      }
-
-      let sortedTeams = Object.keys(teams).sort((a, b) => teams[b] - teams[a]);
-
-      let dayIndex = 0;
-      for (let i = 0; i < daysRequired; i++) {
-        for (let team of sortedTeams) {
-          if (assignedDays[team].length < daysRequired) {
-            let day = weekDays[dayIndex % 5];
-            if (canAddTeam(day, team)) {
-              newSchedule[day].push(team);
-              assignedDays[team].push(day);
-            }
-            dayIndex++;
-          }
-        }
-      }
-
-      allocationPossible = Object.keys(teams).every(
-        (team) => assignedDays[team].length === daysRequired
+    // Only reset totalSeats if it's 0 or daysRequired has changed
+    if (totalSeats === 0 || previousDaysRequired !== daysRequired) {
+      setTotalSeats(minSeats);
+      setPreviousDaysRequired(daysRequired); // Store last used value
+      alert(
+        `Cannot allocate seats fairly. Consider increasing seats. Minimum required seats: ${minSeats}`
       );
-
-      if (!allocationPossible) {
-        tempTotalSeats++;
-      }
-    }
-
-    // *Reset totalSeats to 0 if the new minSeatsRequired is lower*
-    if (minSeats < minSeatsRequired) {
-      setTotalSeats(0);
     }
 
     setMinSeatsRequired(minSeats);
@@ -376,6 +220,7 @@ const SeatAllocator = () => {
 
   const allocateSeats = () => {
     let requiredSeats = calculateMinSeatsRequired();
+
     if (totalSeats < requiredSeats) {
       alert(
         `Cannot allocate seats fairly. Consider increasing seats. Minimum required seats: ${requiredSeats}`
@@ -385,42 +230,67 @@ const SeatAllocator = () => {
       return;
     }
 
-    let newSchedule = {
-      Monday: [],
-      Tuesday: [],
-      Wednesday: [],
-      Thursday: [],
-      Friday: [],
-    };
-    let assignedDays = {};
+    let allocationPossible = false;
+    let newSchedule = null;
+    let tempTotalSeats = totalSeats;
 
-    for (let team in teams) {
-      assignedDays[team] = [];
-    }
+    while (!allocationPossible) {
+      let schedule = {
+        Monday: [],
+        Tuesday: [],
+        Wednesday: [],
+        Thursday: [],
+        Friday: [],
+      };
 
-    for (let i = 0; i < daysRequired; i++) {
+      let assignedDays = {};
       for (let team in teams) {
-        let availableDays = weekDays.filter(
-          (day) => assignedDays[team].length < daysRequired
-        );
-        for (let day of availableDays) {
-          let currentSeats = newSchedule[day].reduce(
-            (sum, t) => sum + teams[t],
-            0
-          );
-          if (currentSeats + teams[team] <= totalSeats) {
-            newSchedule[day].push(team);
-            assignedDays[team].push(day);
-            break;
+        assignedDays[team] = [];
+      }
+
+      function canAddTeam(day, team) {
+        let currentSeats = schedule[day].reduce((sum, t) => sum + teams[t], 0);
+        return currentSeats + teams[team] <= tempTotalSeats;
+      }
+
+      let sortedTeams = Object.keys(teams).sort((a, b) => teams[b] - teams[a]);
+
+      let dayIndex = 0;
+      for (let i = 0; i < daysRequired; i++) {
+        for (let team of sortedTeams) {
+          if (assignedDays[team].length < daysRequired) {
+            let day = weekDays[dayIndex % 5];
+            if (canAddTeam(day, team)) {
+              schedule[day].push(team);
+              assignedDays[team].push(day);
+            }
+            dayIndex++;
           }
         }
       }
+
+      allocationPossible = Object.keys(teams).every(
+        (team) => assignedDays[team].length === daysRequired
+      );
+
+      if (allocationPossible) {
+        newSchedule = schedule;
+      } else {
+        tempTotalSeats++;
+      }
+    }
+
+    if (tempTotalSeats !== totalSeats) {
+      alert(
+        `Cannot allocate seats fairly. Consider increasing seats. Minimum required seats: ${tempTotalSeats}`
+      );
+      setTotalSeats(tempTotalSeats);
+      setMinSeatsRequired(tempTotalSeats);
     }
 
     setSchedule(newSchedule);
   };
 
-  // const [preferences, setPreferences] = useState({});
   const [preferences, setPreferences] = useState({});
   const [showPreferences, setShowPreferences] = useState(false);
 
@@ -542,14 +412,26 @@ const SeatAllocator = () => {
         });
       });
 
+      console.log("abbc",formattedSchedule);
       const payload = {
+        // allocationName: seatingArrangementName,
+        // schedule: formattedSchedule,
+        // teams, // this is already in { teamName: size } format
+        // daysRequired: daysRequired,
+
         allocationName: seatingArrangementName,
         schedule: formattedSchedule,
-        teams, // this is already in { teamName: size } format
-        daysRequired: daysRequired,
+        teams,
+        daysRequired,
       };
 
+      console.log("pay", payload);
+
       await axios.post(`${baseurl}/saveSeatingArrangement`, payload);
+      // await axios.post(`${baseurl}/saveSeatingArrangement`, payload, {
+      //   headers: { "Content-Type": "application/json" },
+      // });
+      
 
       alert("Seating arrangement saved successfully!");
       setShowSavePrompt(false);
@@ -559,6 +441,104 @@ const SeatAllocator = () => {
       alert("Failed to save. Please try again.");
     }
   };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  const [seatingNames, setSeatingNames] = useState([]);
+  const [selectedName, setSelectedName] = useState("");
+  const [arrangement, setArrangement] = useState([]);
+
+  useEffect(() => {
+    fetchSeatingNames();
+  }, []);
+
+  const fetchSeatingNames = async () => {
+    try {
+      const res = await axios.get(`${baseurl}/seating-names`);
+      setSeatingNames(res.data);
+    } catch (err) {
+      console.error("Error fetching seating names", err);
+    }
+  };
+
+  const fetchArrangement = async (name) => {
+    try {
+      const res = await axios.get(`${baseurl}/seating-arrangement/${name}`);
+      setArrangement(res.data);
+    } catch (err) {
+      console.error("Error fetching arrangement", err);
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      await axios.delete(`${baseurl}/seating-arrangement/${selectedName}`);
+      alert("Arrangement deleted");
+      setArrangement([]);
+      fetchSeatingNames();
+      setSelectedName("");
+    } catch (err) {
+      console.error("Error deleting arrangement", err);
+    }
+  };
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   return (
     <div style={{ padding: 20 }}>
@@ -604,6 +584,74 @@ const SeatAllocator = () => {
           Split Team
         </Button>
       </div>
+
+
+
+
+
+
+
+
+      <Paper sx={{ padding: 3, margin: 3 }}>
+      <Typography variant="h6">View & Manage Seating Arrangements</Typography>
+
+      <Select
+        value={selectedName}
+        onChange={(e) => {
+          setSelectedName(e.target.value);
+          fetchArrangement(e.target.value);
+        }}
+        displayEmpty
+        sx={{ marginTop: 2, minWidth: 300 }}
+      >
+        <MenuItem value="" disabled>Select an arrangement</MenuItem>
+        {seatingNames.map((name) => (
+          <MenuItem key={name} value={name}>
+            {name}
+          </MenuItem>
+        ))}
+      </Select>
+
+      {arrangement.length > 0 && (
+        <>
+          <Table sx={{ marginTop: 3 }}>
+            <TableHead>
+              <TableRow>
+                <TableCell>Manager Name</TableCell>
+                <TableCell>Team Name</TableCell>
+                <TableCell>Allocated Days</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {arrangement.map((row, index) => (
+                <TableRow key={index}>
+                  <TableCell>{row.manager_name}</TableCell>
+                  <TableCell>{row.team_name}</TableCell>
+                  <TableCell>{row.allocated_days}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          <Button
+            variant="outlined"
+            color="error"
+            onClick={handleDelete}
+            sx={{ marginTop: 2 }}
+          >
+            Delete This Arrangement
+          </Button>
+        </>
+      )}
+    </Paper>
+
+
+
+
+
+
+
+
+
 
       {/* Seat Allocation Settings */}
       <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
@@ -735,25 +783,6 @@ const SeatAllocator = () => {
       {/* Seat Allocation Table */}
       <TableContainer component={Paper}>
         <Table>
-          {/* <TableHead>
-            <TableRow>
-              <TableCell
-                sx={{ borderRight: "1px solid #ddd", fontWeight: "bold" }}
-              >
-                Day
-              </TableCell>
-              {teams.length > 0 && Object.keys(teams).map((team) => (
-                <TableCell
-                  key={team}
-                  sx={{ borderRight: "1px solid #ddd", fontWeight: "bold" }}
-                >
-                  {${team} (${teams[team]})}
-                </TableCell>
-              ))}
-              <TableCell sx={{ fontWeight: "bold" }}>Total Seats</TableCell>
-            </TableRow>
-          </TableHead> */}
-
           <TableHead>
             <TableRow>
               <TableCell
