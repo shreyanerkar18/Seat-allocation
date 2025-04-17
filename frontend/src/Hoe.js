@@ -803,6 +803,7 @@ const Hoe = () => {
       <Button
         variant="contained"
         color="secondary"
+        style={{ marginBottom: "20px" }}
         onClick={() => navigate("/hoeplan")}
       >
         Manage Seating Arrangement
