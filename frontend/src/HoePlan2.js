@@ -84,8 +84,8 @@ const SeatAllocator = () => {
   const [editableRow, setEditableRow] = useState(null);
   const [editedManager, setEditedManager] = useState("");
 
-  const [totalSeats, setTotalSeats] = useState(42);
-  const [daysRequired, setDaysRequired] = useState(2);
+  const [totalSeats, setTotalSeats] = useState(0);
+  const [daysRequired, setDaysRequired] = useState(0);
   const [schedule, setSchedule] = useState(null);
   const [managerName, setManagerName] = useState("");
   const [teamSize, setTeamSize] = useState("");
@@ -129,20 +129,30 @@ const SeatAllocator = () => {
   };
 
   const addManager = () => {
-    if (managerName && teamSize && !isNaN(teamSize) && teamSize > 0) {
-      const updatedTeams = { ...teams, [managerName]: parseInt(teamSize) };
+    const parsedTeamSize = parseInt(teamSize);
+
+    if (
+      managerName &&
+      teamSize !== "" &&
+      !isNaN(parsedTeamSize) &&
+      parsedTeamSize > 0
+    ) {
+      const updatedTeams = { ...teams, [managerName]: parsedTeamSize };
       setTeams(updatedTeams);
-      setTotalSeats(totalSeats + parseInt(teamSize));
+      setTotalSeats(totalSeats + parsedTeamSize);
       calculateMinSeatsRequired(updatedTeams);
       setManagerName("");
       setTeamSize("");
+
       // 🔹 Recalculate min seats required
       calculateMinSeatsRequired(updatedTeams);
 
       // 🔹 Reallocate seats
       allocateSeats(updatedTeams);
     } else {
-      alert("❌ Please enter a valid manager name and team size.");
+      alert(
+        "❌ Please enter a valid manager name and a positive team size greater than 0."
+      );
     }
   };
 
@@ -198,16 +208,29 @@ const SeatAllocator = () => {
       return;
     }
 
-    let numTeams = parseInt(numSubTeams);
-    let sizes = subTeamSizes.split(",").map((size) => parseInt(size.trim()));
+    const numTeams = parseInt(numSubTeams);
+    if (isNaN(numTeams) || numTeams <= 0) {
+      alert("❌ Please enter a valid, positive number of teams.");
+      return;
+    }
+
+    const sizes = subTeamSizes
+      .split(",")
+      .map((size) => parseInt(size.trim()))
+      .filter((size) => !isNaN(size));
 
     if (sizes.length !== numTeams) {
       alert("❌ Number of teams and provided sizes do not match.");
       return;
     }
 
-    let originalSize = teams[splitManagerName];
-    let totalSplitSize = sizes.reduce((sum, size) => sum + size, 0);
+    if (sizes.some((size) => size <= 0)) {
+      alert("❌ All team sizes must be positive numbers.");
+      return;
+    }
+
+    const originalSize = teams[splitManagerName];
+    const totalSplitSize = sizes.reduce((sum, size) => sum + size, 0);
 
     if (totalSplitSize !== originalSize) {
       alert("❌ Sum of new teams' sizes must equal the original team size.");
@@ -229,11 +252,23 @@ const SeatAllocator = () => {
   };
 
   const allocateSeats = () => {
+    if (
+      isNaN(totalSeats) ||
+      totalSeats <= 0 ||
+      isNaN(daysRequired) ||
+      daysRequired <= 0
+    ) {
+      alert(
+        "❌ Please enter valid positive numbers for Total Seats and Days Required."
+      );
+      return;
+    }
+
     let requiredSeats = calculateMinSeatsRequired();
 
     if (totalSeats < requiredSeats) {
       alert(
-        `Cannot allocate seats fairly. Consider increasing seats. Minimum required seats: ${requiredSeats}`
+        `⚠️ Cannot allocate seats fairly. Consider increasing seats. Minimum required seats: ${requiredSeats}`
       );
       setTotalSeats(requiredSeats);
       setMinSeatsRequired(requiredSeats);
@@ -292,7 +327,7 @@ const SeatAllocator = () => {
 
     if (tempTotalSeats !== totalSeats) {
       alert(
-        `Cannot allocate seats fairly. Consider increasing seats. Minimum required seats: ${tempTotalSeats}`
+        `⚠️ Cannot allocate seats fairly with given seats. Adjusting to minimum required: ${tempTotalSeats}`
       );
       setTotalSeats(tempTotalSeats);
       setMinSeatsRequired(tempTotalSeats);
@@ -405,7 +440,6 @@ const SeatAllocator = () => {
     }));
   };
 
-
   const handleSaveSeatingArrangement = async () => {
     if (!seatingArrangementName) {
       alert("Please enter a seating arrangement name.");
@@ -449,9 +483,7 @@ const SeatAllocator = () => {
         alert("Failed to save. Please try again.");
       }
     }
-
   };
-
 
   const [seatingNames, setSeatingNames] = useState([]);
   const [selectedName, setSelectedName] = useState("");
@@ -525,8 +557,10 @@ const SeatAllocator = () => {
           type="number"
           value={teamSize}
           onChange={(e) => setTeamSize(e.target.value)}
-          size="small" // Small size for TextField
+          size="small"
+          inputProps={{ min: 0 }} // 👈 prevents negative input in UI
         />
+
         <Button variant="contained" onClick={addManager} size="small">
           Add Manager
         </Button>
@@ -545,14 +579,16 @@ const SeatAllocator = () => {
           type="number"
           value={numSubTeams}
           onChange={(e) => setNumSubTeams(e.target.value)}
-          size="small" // Small size for TextField
+          size="small"
+          inputProps={{ min: 1 }} // 👈 Only allow positive integers from UI
         />
         <TextField
           label="Sizes of New Teams (comma-separated)"
           value={subTeamSizes}
           onChange={(e) => setSubTeamSizes(e.target.value)}
-          size="small" // Small size for TextField
+          size="small"
         />
+
         <Button
           variant="contained"
           color="warning"
@@ -570,15 +606,18 @@ const SeatAllocator = () => {
           type="number"
           value={totalSeats}
           onChange={(e) => setTotalSeats(parseInt(e.target.value))}
-          size="small" // Small size for TextField
+          size="small"
+          inputProps={{ min: 0 }} // 👈 prevent zero or negative values
         />
         <TextField
           label="Days Required"
           type="number"
           value={daysRequired}
           onChange={(e) => setDaysRequired(parseInt(e.target.value))}
-          size="small" // Small size for TextField
+          size="small"
+          inputProps={{ min: 0, max: 5 }} // 👈 prevent zero or negative values
         />
+
         <Button
           variant="contained"
           color="primary"
@@ -894,8 +933,7 @@ const SeatAllocator = () => {
         </div>
       )} */}
 
-
-{schedule && Object.keys(schedule).length > 0 && (
+      {schedule && Object.keys(schedule).length > 0 && (
         <div style={{ marginTop: 20, textAlign: "center" }}>
           {!showSavePrompt ? (
             <Button
@@ -939,8 +977,6 @@ const SeatAllocator = () => {
           )}
         </div>
       )}
-
-
     </div>
   );
 };
