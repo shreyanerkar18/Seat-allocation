@@ -744,6 +744,7 @@ const Hoe = () => {
             Available Seats
           </Typography>
         </Grid>
+
         <Grid item>
           <Box
             sx={{
@@ -772,6 +773,7 @@ const Hoe = () => {
             Selected Seats
           </Typography>
         </Grid>
+
         <Grid item>
           <Box
             sx={{
@@ -797,6 +799,14 @@ const Hoe = () => {
           </Typography>
         </Grid>
       </Grid>
+
+      <Button
+        variant="contained"
+        color="secondary"
+        onClick={() => navigate("/hoeplan")}
+      >
+        Manage Seating Arrangement
+      </Button>
 
       {!isSeatsChanging &&
         managers.length > 0 &&
@@ -989,14 +999,6 @@ const Hoe = () => {
               onClick={onClickingAddManager}
             >
               Add Manager
-            </Button>
-
-            <Button
-              variant="contained"
-              color="secondary"
-              onClick={() => navigate("/hoeplan")}
-            >
-              Manage Seating Arrangement
             </Button>
           </Box>
         </Paper>
