@@ -84,7 +84,7 @@ const SeatAllocator = () => {
   const [editableRow, setEditableRow] = useState(null);
   const [editedManager, setEditedManager] = useState("");
 
-  const [totalSeats, setTotalSeats] = useState(0);
+  const [totalSeats, setTotalSeats] = useState(1);
   const [daysRequired, setDaysRequired] = useState(0);
   const [schedule, setSchedule] = useState(null);
   const [managerName, setManagerName] = useState("");
@@ -107,24 +107,65 @@ const SeatAllocator = () => {
 
   const weekDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 
-  const calculateMinSeatsRequired = () => {
-    let totalTeamDays = Object.values(teams).reduce(
-      (sum, size) => sum + size * daysRequired,
-      0
-    );
+  const simulateMinSeatsRequired = () => {
+    let tempTotalSeats = 1;
+    let allocationPossible = false;
 
-    let minSeats = Math.ceil(totalTeamDays / 5);
+    while (!allocationPossible) {
+      let schedule = {
+        Monday: [],
+        Tuesday: [],
+        Wednesday: [],
+        Thursday: [],
+        Friday: [],
+      };
 
-    // Only reset totalSeats if it's 0 or daysRequired has changed
-    if (totalSeats === 0 || previousDaysRequired !== daysRequired) {
-      setTotalSeats(minSeats);
-      setPreviousDaysRequired(daysRequired); // Store last used value
-      alert(
-        `Cannot allocate seats fairly. Consider increasing seats. Minimum required seats: ${minSeats}`
+      let assignedDays = {};
+      for (let team in teams) {
+        assignedDays[team] = [];
+      }
+
+      function canAddTeam(day, team) {
+        let currentSeats = schedule[day].reduce((sum, t) => sum + teams[t], 0);
+        return currentSeats + teams[team] <= tempTotalSeats;
+      }
+
+      let sortedTeams = Object.keys(teams).sort((a, b) => teams[b] - teams[a]);
+      let dayIndex = 0;
+
+      for (let i = 0; i < daysRequired; i++) {
+        for (let team of sortedTeams) {
+          if (assignedDays[team].length < daysRequired) {
+            let day = weekDays[dayIndex % 5];
+            if (canAddTeam(day, team)) {
+              schedule[day].push(team);
+              assignedDays[team].push(day);
+            }
+            dayIndex++;
+          }
+        }
+      }
+
+      allocationPossible = Object.keys(teams).every(
+        (team) => assignedDays[team].length === daysRequired
       );
+
+      if (!allocationPossible) tempTotalSeats++;
     }
 
+    return tempTotalSeats;
+  };
+
+  const calculateMinSeatsRequired = () => {
+    const minSeats = simulateMinSeatsRequired();
     setMinSeatsRequired(minSeats);
+
+    if (totalSeats === 0 || previousDaysRequired !== daysRequired) {
+      // Display alert to the user
+      alert(`ℹ️ Minimum required seats: ${minSeats}`);
+      setPreviousDaysRequired(daysRequired);
+    }
+
     return minSeats;
   };
 
@@ -264,76 +305,56 @@ const SeatAllocator = () => {
       return;
     }
 
-    let requiredSeats = calculateMinSeatsRequired();
+    const minSeats = simulateMinSeatsRequired();
+    setMinSeatsRequired(minSeats);
 
-    if (totalSeats < requiredSeats) {
+    // Only proceed with allocation if totalSeats is at least the required amount
+    if (totalSeats < minSeats) {
       alert(
-        `⚠️ Cannot allocate seats fairly. Consider increasing seats. Minimum required seats: ${requiredSeats}`
+        `⚠️ You have fewer seats than required. Adjusting to minimum required: ${minSeats}`
       );
-      setTotalSeats(requiredSeats);
-      setMinSeatsRequired(requiredSeats);
+      setTotalSeats(minSeats); // Update totalSeats with the suggested number
       return;
     }
 
-    let allocationPossible = false;
-    let newSchedule = null;
-    let tempTotalSeats = totalSeats;
+    // Now that totalSeats is confirmed, proceed to seat allocation
+    const usedSeats = Math.max(totalSeats, minSeats);
 
-    while (!allocationPossible) {
-      let schedule = {
-        Monday: [],
-        Tuesday: [],
-        Wednesday: [],
-        Thursday: [],
-        Friday: [],
-      };
+    let schedule = {
+      Monday: [],
+      Tuesday: [],
+      Wednesday: [],
+      Thursday: [],
+      Friday: [],
+    };
 
-      let assignedDays = {};
-      for (let team in teams) {
-        assignedDays[team] = [];
-      }
+    let assignedDays = {};
+    for (let team in teams) {
+      assignedDays[team] = [];
+    }
 
-      function canAddTeam(day, team) {
-        let currentSeats = schedule[day].reduce((sum, t) => sum + teams[t], 0);
-        return currentSeats + teams[team] <= tempTotalSeats;
-      }
+    function canAddTeam(day, team) {
+      let currentSeats = schedule[day].reduce((sum, t) => sum + teams[t], 0);
+      return currentSeats + teams[team] <= usedSeats;
+    }
 
-      let sortedTeams = Object.keys(teams).sort((a, b) => teams[b] - teams[a]);
+    let sortedTeams = Object.keys(teams).sort((a, b) => teams[b] - teams[a]);
+    let dayIndex = 0;
 
-      let dayIndex = 0;
-      for (let i = 0; i < daysRequired; i++) {
-        for (let team of sortedTeams) {
-          if (assignedDays[team].length < daysRequired) {
-            let day = weekDays[dayIndex % 5];
-            if (canAddTeam(day, team)) {
-              schedule[day].push(team);
-              assignedDays[team].push(day);
-            }
-            dayIndex++;
+    for (let i = 0; i < daysRequired; i++) {
+      for (let team of sortedTeams) {
+        if (assignedDays[team].length < daysRequired) {
+          let day = weekDays[dayIndex % 5];
+          if (canAddTeam(day, team)) {
+            schedule[day].push(team);
+            assignedDays[team].push(day);
           }
+          dayIndex++;
         }
       }
-
-      allocationPossible = Object.keys(teams).every(
-        (team) => assignedDays[team].length === daysRequired
-      );
-
-      if (allocationPossible) {
-        newSchedule = schedule;
-      } else {
-        tempTotalSeats++;
-      }
     }
 
-    if (tempTotalSeats !== totalSeats) {
-      alert(
-        `⚠️ Cannot allocate seats fairly with given seats. Adjusting to minimum required: ${tempTotalSeats}`
-      );
-      setTotalSeats(tempTotalSeats);
-      setMinSeatsRequired(tempTotalSeats);
-    }
-
-    setSchedule(newSchedule);
+    setSchedule(schedule); // Only update the schedule after allocation
   };
 
   const [preferences, setPreferences] = useState({});
@@ -607,7 +628,7 @@ const SeatAllocator = () => {
           value={totalSeats}
           onChange={(e) => setTotalSeats(parseInt(e.target.value))}
           size="small"
-          inputProps={{ min: 0 }} // 👈 prevent zero or negative values
+          inputProps={{ min: 1 }} // 👈 prevent zero or negative values
         />
         <TextField
           label="Days Required"
@@ -807,15 +828,15 @@ const SeatAllocator = () => {
       </Paper>
 
       {/* Seat Allocation Table */}
-      <TableContainer sx={{ marginTop: 2, padding: 2 }}>
-        <Table sx={{ minWidth: 600 }}>
+      <TableContainer sx={{ marginTop: 2, padding: 2, marginLeft: -2 }}>
+        <Table sx={{ minWidth: 600, borderCollapse: "collapse" }}>
           <TableHead>
-            <TableRow>
+            <TableRow sx={{ border: "1px solid #555" }}>
               <TableCell
                 sx={{
-                  borderRight: "1px solid #ddd",
+                  border: "1px solid #555",
                   fontWeight: "bold",
-                  backgroundColor: "#f0f0f0", // Highlight first row
+                  backgroundColor: "#c0c0c0", // Strong highlight for Day header
                 }}
               >
                 Day
@@ -825,16 +846,20 @@ const SeatAllocator = () => {
                   <TableCell
                     key={manager}
                     sx={{
-                      borderRight: "1px solid #ddd",
+                      border: "1px solid #555",
                       fontWeight: "bold",
-                      backgroundColor: "#f0f0f0", // Highlight first row
+                      backgroundColor: "#dcdcdc", // Highlighted heading row
                     }}
                   >
                     {`${manager} (${teams[manager]})`}
                   </TableCell>
                 ))}
               <TableCell
-                sx={{ fontWeight: "bold", backgroundColor: "#f0f0f0" }}
+                sx={{
+                  border: "1px solid #555",
+                  fontWeight: "bold",
+                  backgroundColor: "#dcdcdc", // Highlighted heading row
+                }}
               >
                 Total Seats
               </TableCell>
@@ -853,11 +878,11 @@ const SeatAllocator = () => {
               );
 
               return (
-                <TableRow key={day}>
+                <TableRow key={day} sx={{ border: "1px solid #555" }}>
                   <TableCell
                     sx={{
-                      borderRight: "1px solid #ddd",
-                      backgroundColor: "#f9f9f9", // Highlight first column
+                      border: "1px solid #555",
+                      backgroundColor: "#eaeaea", // Highlight week column
                       fontWeight: "bold",
                     }}
                   >
@@ -867,7 +892,7 @@ const SeatAllocator = () => {
                     <TableCell
                       key={team}
                       sx={{
-                        borderRight: "1px solid #ddd",
+                        border: "1px solid #555",
                         textAlign: "center",
                       }}
                     >
@@ -876,7 +901,15 @@ const SeatAllocator = () => {
                         : ""}
                     </TableCell>
                   ))}
-                  <TableCell>{totalSeatsForDay}</TableCell>
+                  <TableCell
+                    sx={{
+                      border: "1px solid #555",
+                      textAlign: "center",
+                      backgroundColor: "#f8f8f8", // Optional: style total seats column too
+                    }}
+                  >
+                    {totalSeatsForDay}
+                  </TableCell>
                 </TableRow>
               );
             })}
