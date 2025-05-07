@@ -783,24 +783,20 @@ const Manager = () => {
             helperText={newLastNameError}
             color="success"
           />
-          <Box sx={{ marginBottom: "25px" }}>
-            {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"].map(
-              (day) => (
-                <TextField
-                  key={day}
-                  label={`Seat for ${day}`}
-                  fullWidth
-                  value={newSeats[day] || ""}
-                  onChange={(e) => {
-                    const updated = { ...newSeats, [day]: e.target.value };
-                    setNewSeats(updated);
-                  }}
-                  style={{ marginBottom: "15px" }}
-                  color="success"
-                />
-              )
-            )}
-          </Box>
+          <TextField
+            label="Selected Seat for Each Day"
+            name="selectedSeats"
+            fullWidth
+            value={JSON.stringify(newSeats)
+              .slice(1, -1)
+              .replace(/,/g, ",   ")
+              .replace(/"/g, "")}
+            style={{ marginBottom: "25px" }}
+            InputProps={{
+              readOnly: true,
+            }}
+            autoFocus
+          />
 
           <Button
             variant="contained"
