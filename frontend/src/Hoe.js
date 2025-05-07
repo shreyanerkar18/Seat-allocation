@@ -21,6 +21,11 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from "@mui/material";
 import Seat from "./Seat";
 import { baseurl } from "./utils";
@@ -66,6 +71,11 @@ const Hoe = () => {
   const [selectedFloor, setSelectedFloor] = useState("");
   const [hoeId, setHoeId] = useState("");
   const navigate = useNavigate();
+
+  // modify remove manager
+  const [isEditingManager, setIsEditingManager] = useState(false);
+  const [editingManagerData, setEditingManagerData] = useState(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const { token } = useContext(AuthContext);
   // const decoded = jwtDecode(token);
@@ -415,8 +425,9 @@ const Hoe = () => {
 
   const onClickingAddManager = async () => {
     if (firstName !== "" && lastName !== "") {
-      if (selectedSeats.length === 0) {
-        alert("Please select at least one seat");
+      if (!firstName || !lastName || seatCount <= 0) {
+        alert("Please fill all fields correctly.");
+        return;
       } else {
         try {
           const response = await axios.post(`${baseurl}/addNewManager`, {
@@ -670,6 +681,147 @@ const Hoe = () => {
           ))}
         </Select>
       </FormControl>
+
+      {selectedManager && (
+        <Box display="flex" gap={2} mb={2}>
+          <Button
+            variant="contained"
+            color="secondary"
+            onClick={() => {
+              const [first, ...rest] = selectedManager.name.split(" ");
+              setEditingManagerData({
+                ...selectedManager,
+                firstName: first || "",
+                lastName: rest.join(" ") || "",
+              });
+              setIsEditingManager(true);
+            }}
+          >
+            Edit Manager
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={() => setShowDeleteDialog(true)}
+          >
+            Remove Manager
+          </Button>
+        </Box>
+      )}
+
+      <Dialog
+        open={showDeleteDialog}
+        onClose={() => setShowDeleteDialog(false)}
+      >
+        <DialogTitle>Confirm Removal</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to remove manager "{selectedManager?.name}"?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowDeleteDialog(false)}>Cancel</Button>
+          <Button
+            onClick={() => {
+              setManagers((prev) =>
+                prev.filter((m) => m.id !== selectedManager.id)
+              );
+              setSelectedManager("");
+              setShowDeleteDialog(false);
+            }}
+            color="error"
+          >
+            Remove
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {isEditingManager && selectedManager && (
+        <Paper elevation={0} style={{ padding: "20px", marginTop: "20px" }}>
+          <Typography variant="h6" gutterBottom>
+            Editing: {selectedManager.name}
+          </Typography>
+
+          <TextField
+            label="First Name"
+            fullWidth
+            value={editingManagerData.firstName}
+            onChange={(e) =>
+              setEditingManagerData({
+                ...editingManagerData,
+                firstName: e.target.value,
+              })
+            }
+            style={{ marginBottom: "15px" }}
+          />
+          <TextField
+            label="Last Name"
+            fullWidth
+            value={editingManagerData.lastName}
+            onChange={(e) =>
+              setEditingManagerData({
+                ...editingManagerData,
+                lastName: e.target.value,
+              })
+            }
+            style={{ marginBottom: "15px" }}
+          />
+          <TextField
+            label="Team Size"
+            type="number"
+            fullWidth
+            value={editingManagerData.seatCount}
+            error={editingManagerData.seatCount < 0}
+            helperText={
+              editingManagerData.seatCount < 0
+                ? "Team size cannot be negative"
+                : ""
+            }
+            onChange={(e) => {
+              const value = parseInt(e.target.value);
+              setEditingManagerData({
+                ...editingManagerData,
+                seatCount: isNaN(value) ? 0 : value,
+              });
+            }}
+            style={{ marginBottom: "15px" }}
+          />
+
+          <Box display="flex" gap={2}>
+            <Button
+              variant="contained"
+              color="primary"
+              disabled={editingManagerData.seatCount < 0}
+              onClick={() => {
+                const updatedName = `${editingManagerData.firstName} ${editingManagerData.lastName}`;
+                const updatedManager = {
+                  ...editingManagerData,
+                  name: updatedName,
+                };
+
+                const updatedManagers = managers.map((m) =>
+                  m.id === selectedManager.id ? updatedManager : m
+                );
+
+                setManagers(updatedManagers);
+                setSelectedManager(updatedManager);
+                setIsEditingManager(false);
+              }}
+            >
+              Save Changes
+            </Button>
+
+            <Button
+              variant="outlined"
+              color="secondary"
+              onClick={() => setIsEditingManager(false)}
+            >
+              Cancel
+            </Button>
+          </Box>
+        </Paper>
+      )}
+
       <Box
         display="flex"
         flexDirection="row"
@@ -800,15 +952,6 @@ const Hoe = () => {
         </Grid>
       </Grid>
 
-      <Button
-        variant="contained"
-        color="secondary"
-        style={{ marginBottom: "20px" }}
-        onClick={() => navigate("/hoeplan")}
-      >
-        Manage Seating Arrangement
-      </Button>
-
       {!isSeatsChanging &&
         managers.length > 0 &&
         HOE.seats.length > 0 &&
@@ -821,26 +964,6 @@ const Hoe = () => {
             Change Seats for {selectedManager.name}
           </Button>
         )}
-      {isSeatsChanging && !isAddingManager && (
-        <Paper elevation={0} style={{ padding: "20px", marginTop: "20px" }}>
-          <TextField
-            label="Selected Seats"
-            fullWidth
-            value={selectedSeats}
-            style={{ marginBottom: "25px" }}
-            InputProps={{
-              readOnly: true,
-            }}
-          />
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={onClickingUpdateSeats}
-          >
-            Update Seats for {selectedManager.name}
-          </Button>
-        </Paper>
-      )}
 
       {!isSeatsChanging &&
         !isAddingManager &&
@@ -851,86 +974,18 @@ const Hoe = () => {
             variant="contained"
             color="primary"
             onClick={onClickingAddNewManager}
-            sx={{ marginTop: 5 }}
+            sx={{ marginTop: 2 }}
           >
             Add New Manager
           </Button>
         )}
 
-      {/* {isSeatsChanging && isAddingManager && (
-        <Paper elevation={0} style={{ padding: "20px", marginTop: "20px" }}>
-          <TextField
-            label="First Name"
-            name="firstname"
-            fullWidth
-            value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
-            style={{ marginBottom: "15px" }}
-            autoFocus
-            onBlur={handleBlur}
-            error={!!firstNameError}
-            helperText={firstNameError}
-            color="success"
-          />
-          <TextField
-            label="Last Name"
-            name="lastname"
-            fullWidth
-            value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
-            style={{ marginBottom: "25px" }}
-            autoFocus
-            onBlur={handleBlur}
-            error={!!lastNameError}
-            helperText={lastNameError}
-            color="success"
-          />
-          <TextField
-            label="Seat Count"
-            type="number"
-            name="seatcount"
-            fullWidth
-            value={seatCount}
-            onChange={(e) => setSeatCount(parseInt(e.target.value))}
-            style={{ marginBottom: "25px" }}
-            inputProps={{
-              min: 1,
-              max: HOE.seats.length - countAllocatedSeats(),
-            }}
-          />
-          <TextField
-            label="Seats Selected Count"
-            name="seatsselectedcount"
-            fullWidth
-            value={selectedSeatCount}
-            style={{ marginBottom: "25px" }}
-            InputProps={{
-              readOnly: true,
-            }}
-            autoFocus
-          />
-          <TextField
-            label="Selected Seats"
-            name="selectedseats"
-            fullWidth
-            value={seatData[selectedDay].join(", ")}
-            style={{ marginBottom: "25px" }}
-            InputProps={{
-              readOnly: true,
-            }}
-            autoFocus
-          />
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={onClickingAddManager}
-          >
-            Add Manager
-          </Button>
-        </Paper>
-      )} */}
       {isSeatsChanging && isAddingManager && (
         <Paper elevation={0} style={{ padding: "20px", marginTop: "20px" }}>
+          <Typography variant="h6" gutterBottom>
+            Add New Manager
+          </Typography>
+
           <TextField
             label="First Name"
             name="firstname"
@@ -950,15 +1005,14 @@ const Hoe = () => {
             fullWidth
             value={lastName}
             onChange={(e) => setLastName(e.target.value)}
-            style={{ marginBottom: "25px" }}
-            autoFocus
+            style={{ marginBottom: "15px" }}
             onBlur={handleBlur}
             error={!!lastNameError}
             helperText={lastNameError}
             color="success"
           />
           <TextField
-            label="Seat Count"
+            label="Required Seat Count"
             type="number"
             name="seatcount"
             fullWidth
@@ -969,28 +1023,6 @@ const Hoe = () => {
               min: 1,
               max: HOE.seats.length - countAllocatedSeats(),
             }}
-          />
-          <TextField
-            label="Seats Selected Count"
-            name="seatsselectedcount"
-            fullWidth
-            value={selectedSeatCount}
-            style={{ marginBottom: "25px" }}
-            InputProps={{
-              readOnly: true,
-            }}
-            autoFocus
-          />
-          <TextField
-            label="Selected Seats"
-            name="selectedseats"
-            fullWidth
-            value={seatData[selectedDay].join(", ")}
-            style={{ marginBottom: "25px" }}
-            InputProps={{
-              readOnly: true,
-            }}
-            autoFocus
           />
 
           <Box display="flex" gap={2}>
@@ -1000,6 +1032,20 @@ const Hoe = () => {
               onClick={onClickingAddManager}
             >
               Add Manager
+            </Button>
+
+            <Button
+              variant="outlined"
+              color="secondary"
+              onClick={() => {
+                setIsSeatsChanging(false);
+                setIsAddingManager(false);
+                setFirstName("");
+                setLastName("");
+                setSeatCount(0);
+              }}
+            >
+              Cancel
             </Button>
           </Box>
         </Paper>

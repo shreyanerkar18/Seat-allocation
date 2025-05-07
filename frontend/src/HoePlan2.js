@@ -85,7 +85,7 @@ const SeatAllocator = () => {
   const [editedManager, setEditedManager] = useState("");
 
   const [totalSeats, setTotalSeats] = useState(1);
-  const [daysRequired, setDaysRequired] = useState(0);
+  const [daysRequired, setDaysRequired] = useState(2);
   const [schedule, setSchedule] = useState(null);
   const [managerName, setManagerName] = useState("");
   const [teamSize, setTeamSize] = useState("");
